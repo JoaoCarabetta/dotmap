@@ -1,0 +1,11 @@
+{
+  "options": {
+  },
+  "styles": {
+  },
+  "data": {
+    "censo2022": {
+        "mbtiles": "data/tiles/censo2022.mbtiles"
+    }
+  }
+}

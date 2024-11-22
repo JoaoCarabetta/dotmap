@@ -1,0 +1,18 @@
+- [ ] Adjust zoom levels, population density and aggregation levels
+- [ ] Add legend like Washignton Post reference
+- [ ] Adjust colors and dot size
+- [ ] Add header with title and description and logo
+- [ ] Add footer with source and methodology
+
+| Dot Density | Aggregation | Zoom Level |
+|-------------|-------------|-----------|
+| 40          | Census      |   13      |
+| 60          | Census      |   12      |
+| 120         | Census      |   11      |
+| 200         | Census      |   10      |
+| 500         | Census      |   9       |
+| 500        | Census      |   8       |
+| 500        | Census        |   7       |
+| 500        | Census        |   6       |
+| 500        | Census        |   5       |
+| 500       | Census        |   4       |

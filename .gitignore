@@ -1,0 +1,8 @@
+.venv
+.terraform
+mbutil
+node_modules
+dots
+output
+tiles
+data
