@@ -4,18 +4,17 @@ This document describes the relationship between zoom levels and dot density in 
 
 ## Configuration Table
 
-| Dot Density | Aggregation | Zoom Level |
-|-------------|-------------|-----------|
-| 40          | Census      |   13      |
-| 60          | Census      |   12      |
-| 120         | Census      |   11      |
-| 200         | Census      |   10      |
-| 500         | Census      |   9       |
-| 500        | Census      |   8       |
-| 500        | Census        |   7       |
-| 500        | Census        |   6       |
-| 500        | Census        |   5       |
-| 500       | Census        |   4       |
+
+| Dot Density | Aggregation | Zoom Level | Dot Size (px) |
+|-------------|-------------|------------|---------------|
+| 5          | Census      |   14        | 1.2           |
+| 10          | Census      |   13       | 1.2           |
+| 15          | Census      |   12      | 1.2           |
+| 20          | Census      |   11      | 1.1           |
+| 25          | Census      |   10      | 1.1           |
+| 30          | Census      |   9       | 1.0           |
+| 35          | Census      |   8       | 1.0           |
+| 40          | Census      |   7       | 0.8           |
 
 
 ## Details
@@ -62,5 +61,41 @@ Contains aggregated demographic data at the municipality level with the followin
 - Census tract data is suitable for detailed local analysis
 - Municipality data is better for regional patterns and overview
 - All population counts are absolute numbers
+  
+# Interactive Legend Controls
+
+## Race Category Toggles
+
+The legend provides two ways to control the visibility of racial categories:
+
+### Category Toggle
+- Click on any category label to toggle its visibility
+- Multiple categories can be visible simultaneously
+- Categories can be toggled independently
+
+### Solo Mode
+- Each category has a "S" (Solo) button that appears on hover
+- Click the Solo button to show only that category
+- All other categories will be automatically hidden
+- Useful for analyzing individual racial distributions
+
+### Visual Feedback
+- Disabled categories appear semi-transparent
+- Hover effects indicate interactive elements
+- Solo buttons appear on hover for a cleaner interface
+- All categories are visible by default
+
+### Available Categories
+- Branca (White)
+- Preta (Black)
+- Amarela (Asian)
+- Parda (Brown/Mixed)
+- Indígena (Indigenous)
+
+### Technical Implementation
+- Uses Mapbox GL JS filters for visibility control
+- Maintains a Set of active races for efficient filtering
+- Separate click handlers for toggle and solo modes
+- Updates are applied immediately to the map visualization
   
   

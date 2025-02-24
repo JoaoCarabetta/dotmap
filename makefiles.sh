@@ -34,11 +34,11 @@ mkdir -p $tiles_directory
 
 # Define zoom level ranges and corresponding per-dot values based on reference table
 # Format: zoom levels, dots per person, and aggregation level
-min_zoom_levels=(4  5  6  7  8  9  10 11 12 13)
-max_zoom_levels=(4  5  6  7  8  9  10 11 12 13)
-per_dot_values=(500 500 500 500 500 500 200 120 60 40)
-# City level: zoom 4-7, Census tract level: zoom 8-13
-aggregation_levels=("census" "census" "census" "census" "census" "census" "census" "census" "census" "census")
+min_zoom_levels=(7  8  9  10 11 12 13 14)
+max_zoom_levels=(7  8  9  10 11 12 13 14)
+per_dot_values=(150 120 90 70 50 35 25 20)
+# Census tract level: zoom 7-14
+aggregation_levels=("census" "census" "census" "census" "census" "census" "census" "census")
 
 # Loop through zoom level ranges
 echo ">> Generating dot density files and tilesets"
@@ -79,7 +79,7 @@ for i in "${!min_zoom_levels[@]}"; do
 
     # Generate tileset
     echo ">> Running tippecanoe for zoom levels $min_zoom to $max_zoom"
-    tippecanoe -o "${tileset_directory}/tiles.mbtiles" -z$max_zoom -Z$min_zoom $output_geojson --force -P -r1
+    tippecanoe -o "${tileset_directory}/tiles.mbtiles" -z$max_zoom -Z$min_zoom $output_geojson --force -P -r1 --drop-fraction-as-needed
 
     # Check for errors
     if [ $? -ne 0 ]; then
