@@ -4,5 +4,5 @@ mbutil
 node_modules
 dots
 output
-tiles
+# tiles
 data
