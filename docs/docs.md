@@ -1,3 +1,5 @@
+Agent instructions for this repo live in [`AGENTS.md`](../AGENTS.md). Project layout is in [`structure.md`](structure.md). How to serve the map from the versioned MBTiles is in [`local-setup.md`](local-setup.md). The public page is [https://carabetta.xyz/dataviz/brazildots/](https://carabetta.xyz/dataviz/brazildots/).
+
 # Zoom Levels and Dot Density Configuration
 
 This document describes the relationship between zoom levels and dot density in the map visualization.
