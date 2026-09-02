@@ -68,41 +68,28 @@ Contains aggregated demographic data at the municipality level with the followin
 - Municipality data is better for regional patterns and overview
 - All population counts are absolute numbers
 
-# Interactive Legend Controls
+# Interactive Race Filter
 
-## Race Category Toggles
+Race filters live in the **legend card** (`.detail-card`), pinned to the bottom-left above the slim footer. Each legend row is a toggle. There is no Raça chip or dropdown. Do not add other layer chips yet.
 
-The legend provides two ways to control the visibility of racial categories:
+## Legend rows
+- One row per IBGE category: color swatch + name. Clicking the row **toggles** that race. Multi-select is the default. Off rows fade (`is-off`).
+- Each row has an **S** (solo) button. On hover/focus it appears; on ≤640px it stays visible because there is no hover.
 
-### Category Toggle
-- Click on any category label to toggle its visibility
-- Multiple categories can be visible simultaneously
-- Categories can be toggled independently
-
-### Solo Mode
-- Each category has a "S" (Solo) button that appears on hover
-- Click the Solo button to show only that category
-- All other categories will be automatically hidden
-- Useful for analyzing individual racial distributions
-
-### Visual Feedback
-- Disabled categories appear semi-transparent
-- Hover effects indicate interactive elements
-- Solo buttons appear on hover for a cleaner interface
-- All categories are visible by default
-
-### Available Categories
+## Available Categories
 - Branca (White)
 - Preta (Black)
 - Amarela (Asian)
 - Parda (Brown/Mixed)
 - Indígena (Indigenous)
 
-### Technical Implementation
-- Uses Mapbox GL JS filters for visibility control
-- Maintains a Set of active races for efficient filtering
-- Separate click handlers for toggle and solo modes
-- Updates are applied immediately to the map visualization
+Do not add categories beyond these five IBGE keys (`branca`, `preta`, `amarela`, `parda`, `indigena`).
+
+## Technical Implementation
+- Mapbox GL JS `setFilter` / `circle-opacity` on the `points` layer
+- A `Set` of active races
+- Separate handlers on `.race-row-toggle` and `.solo-button`
+- `syncFilterUi()` keeps the legend rows in the same Set
 
 # Basemap
 
@@ -110,18 +97,39 @@ The map uses Mapbox **dark-v10** (`mapbox://styles/mapbox/dark-v10`): a dark str
 
 Hover outlines on `setores-border` and `municipios-border` are `white` so they stay visible on the dark style.
 
-Dot colors are unchanged. The floating sidebar and the hover tooltip use light chrome (white panels, dark text) on top of the dark map.
+Dot colors are unchanged. The two floating cards, the search field, and the slim footer use light chrome (white surfaces, dark text) on top of the dark map.
 
-# Sidebar chrome
+# Map chrome
 
-The map is full-bleed (`#map` is `100vw` / `100vh`). There is no fixed header or footer bar. Title, explanation, search, race legend, and credits live in a single floating left card (`.sidebar`, ~340px, 16px from the top-left) so the map is not letterboxed by 60px chrome and so the legend is not a second competing box.
+The map is full-bleed (`#map` is `100vw` / `100vh`). There is **no** fixed header and **no left icon rail**. Chrome is two floating cards plus a slim full-width footer (~32px): intro top-left (`.chrome-stack`, 14px inset) and the legend bottom-left, above the footer. Zoom `+/-` stays at the bottom-right, just above the footer.
 
-The product title (`h1.sidebar-title` and the page `<title>`) is **Onde o Brasil mora**. It is product-level so later views (other census themes) can share the same name. The subtitle (`p.sidebar-subtitle`) is **Cada ponto é um grupo de pessoas. A cor é a raça no Censo 2022.** — it explains the viz for someone who has never seen the map (what the dots are, then what the colors mean and the source). Do not say “um ponto por pessoa”: one dot is N people and N changes with zoom. Do not restore the old h1 “Distribuição Racial no Brasil” (too close to Pata’s 2015 *Mapa Racial do Brasil*) or a one-word “Raça” label. Future views rewrite the explanation, not the h1. There is no logo. Zoom is changed with the Mapbox control (top-right, 16px inset on desktop; bottom-right on viewports ≤520px so it does not sit on the full-width card); there is no on-screen “Zoom level: N” badge. The public URL slug remains `brazildots`. The hover tooltip stays a map overlay; it is not in the sidebar.
+## Left card (`.intro-card`)
 
-The card also has a **search box** powered by [`mapbox-gl-geocoder`](https://github.com/mapbox/mapbox-gl-geocoder) v5 against Mapbox Temporary Geocoding — the same token as the basemap, no Google key. Placeholder: **Buscar cidade, CEP ou endereço**. Results are limited to Brazil and to an RJ bounding box (`[-44.89, -23.37, -40.75, -20.76]`) with proximity to Rio, because the dots only exist in that recorte. Selecting a result `fitBounds` the map; there is no persistent pin so the marker would not compete with the race-dot colors. Full Brazilian CEPs (`XXXXX-XXX`) are resolved via [BrasilAPI](https://brasilapi.com.br/) (`/cep/v2`) because Mapbox postcode matching is weak for that format; city, bairro, and address stay on Mapbox. CEPs outside RJ are dropped.
+White rounded card, top-left. Title + explainer + divider + search (Arquivo da Violência layout).
 
-On viewports ≤520px the card stays a short top strip (title, subtitle, search). A chevron (`#sidebar-toggle`) expands or collapses the legend and credits so a ~390px-wide phone still has a usable map. Solo buttons stay visible on that breakpoint because there is no hover.
+The product title (`h1.intro-title` and the page `<title>`) is **Onde o Brasil mora**. It is product-level so later views can share the same name. The explainer (`p.intro-explainer`) is:
+
+**Cada ponto é um grupo de pessoas. A cor é a raça declarada no Censo Demográfico 2022 (IBGE). O número de pessoas por ponto muda com o zoom.**
+
+Do not say “um ponto por pessoa”: one dot is N people and N changes with zoom. Do not restore the old h1 “Distribuição Racial no Brasil” (too close to Pata’s 2015 *Mapa Racial do Brasil*). Future views rewrite the explanation, not the h1.
+
+Search sits **inside** this card, powered by [`mapbox-gl-geocoder`](https://github.com/mapbox/mapbox-gl-geocoder) v5 against Mapbox Temporary Geocoding — the same token as the basemap, no Google key. Placeholder: **Busque por cidade, bairro, estado ou CEP**. Results are limited to Brazil and to an RJ bounding box (`[-44.89, -23.37, -40.75, -20.76]`) with proximity to Rio, because the dots only exist in that recorte. Selecting a result `fitBounds` the map; there is no persistent pin so the marker would not compete with the race-dot colors. Full Brazilian CEPs (`XXXXX-XXX`) are resolved via [BrasilAPI](https://brasilapi.com.br/) (`/cep/v2`) because Mapbox postcode matching is weak for that format; city, bairro, and address stay on Mapbox. CEPs outside RJ are dropped.
+
+Do not restore a standalone search chrome or a Raça chip.
+
+## Legend card (`.detail-card`)
+
+White rounded card, pinned **bottom-left** (`position: fixed; left: 14px`), sitting above the slim footer (`bottom: calc(var(--footer-height) + 14px)`). Compact (~268px wide). It is **not** stacked under the intro card. It holds:
+
+1. The five race rows (the filter — see [Interactive Race Filter](#interactive-race-filter)).
+2. `1 ponto = N pessoas` (existing zoom scale).
+
+Hover numbers live in the Mapbox **popup on the map** (município below zoom 10, setor from zoom 10): name, race shares, and população. The white hover outline stays on the map. The legend card does not repeat those numbers.
+
+There is no logo. Zoom is the Mapbox `NavigationControl` at the bottom-right; there is no on-screen “Zoom level: N” badge. The public URL slug remains `brazildots`.
+
+On ≤640px the intro card can shrink so it does not collide with the bottom-left legend. Solo buttons stay visible on that breakpoint.
 
 # Credits
 
-Credits sit at the bottom of the sidebar card, not in a full-width footer. “Dados: IBGE” links to the official [Agregados por Setores Censitários 2022](https://ftp.ibge.gov.br/Censos/Censo_Demografico_2022/Agregados_por_Setores_Censitarios/) FTP collection (the source documented in [`fontes.md`](fontes.md)), not the IBGE homepage. “Censo Demográfico 2022” links to the [Censo 2022 dataset on Base dos Dados](https://basedosdados.org/dataset/08a1546e-251f-4546-9fe0-b1e6ab2b203d) (the 2022-specific page, not the older `br-ibge-censo-demografico` collection). Then: [GitHub](https://github.com/JoaoCarabetta/dotmap) (this repo), [Carabetta.xyz](https://carabetta.xyz), and `© 2026 Carabetta.xyz`.
+Credits sit in `.map-footer`, a slim full-width bar (~32px, wraps on narrow screens), not in either card and not as a second explainer. “Dados: IBGE” links to the official [Agregados por Setores Censitários 2022](https://ftp.ibge.gov.br/Censos/Censo_Demografico_2022/Agregados_por_Setores_Censitarios/) FTP collection (the source documented in [`fontes.md`](fontes.md)), not the IBGE homepage. “Censo Demográfico 2022” links to the [Censo 2022 dataset on Base dos Dados](https://basedosdados.org/dataset/08a1546e-251f-4546-9fe0-b1e6ab2b203d) (the 2022-specific page, not the older `br-ibge-censo-demografico` collection). Then: [GitHub](https://github.com/JoaoCarabetta/dotmap) (this repo), [Carabetta.xyz](https://carabetta.xyz), and `© 2026 Carabetta.xyz`.

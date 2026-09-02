@@ -44,13 +44,13 @@ Alternativa ao http.server: `uv run python server.py` (Flask + CORS, porta 8000)
 
 ## Mapa de arquivos
 
-- `index.html` — UI, estilo, sidebar flutuante, busca, legenda, tooltip e **toda** a lógica do mapa (sources, layers, hover, filtros). Mapa full-bleed (`#map` 100vw/100vh); não há header/footer em barra. Título do produto (`h1` e `<title>`): **Onde o Brasil mora**. Subtítulo atual: **Cada ponto é um grupo de pessoas. A cor é a raça no Censo 2022.** (explica a viz; outras views reescrevem a explicação, não o h1). Card à esquerda (~340px) com título, subtítulo, busca (`mapbox-gl-geocoder` v5, cidade/CEP/endereço, `countries: br` + bbox RJ, sem pin; CEP de 8 dígitos via BrasilAPI), legenda (toggles + solo + escala) e créditos. Em viewports estreitas (≤520px) a card fica compacta; chevron expande/recolhe legenda + créditos. Créditos no card, não num rodapé: **Carabetta.xyz** (`© 2026`), não Escritório de Dados. “Dados: IBGE” aponta para o FTP dos Agregados por Setores 2022; “Censo Demográfico 2022” aponta para o dataset Censo 2022 na Base dos Dados (`https://basedosdados.org/dataset/08a1546e-251f-4546-9fe0-b1e6ab2b203d`); GitHub aponta para `https://github.com/JoaoCarabetta/dotmap`.
+- `index.html` — UI, estilo, dois cards flutuantes, rodapé fino, busca, legenda clicável, detalhes de hover e **toda** a lógica do mapa (sources, layers, hover, filtros). Mapa full-bleed (`#map` 100vw/100vh); não há header em barra nem rail esquerdo. **Card de intro** (`.chrome-stack` / `.intro-card`, top-left ~14px): título, explainer, divisor e busca (`mapbox-gl-geocoder` v5, cidade/bairro/CEP/endereço, `countries: br` + bbox RJ, sem pin; CEP de 8 dígitos via BrasilAPI). **Card de legenda** (`.detail-card`, ~268px) fica **canto inferior esquerdo** (`position: fixed; left: 14px`), acima do rodapé slim, com cinco linhas de raça (toggle + solo; multi-select; sem chip/dropdown) e `1 ponto = N pessoas`. Os números do município/setor ficam no **tooltip do mapa** (popup), não no card. Não inventar chips de outras camadas. Título do produto (`h1` e `<title>`): **Onde o Brasil mora**. Explainer: **Cada ponto é um grupo de pessoas. A cor é a raça declarada no Censo Demográfico 2022 (IBGE). O número de pessoas por ponto muda com o zoom.** (outras views reescrevem a explicação, não o h1). **Rodapé slim** (~32px, não a barra antiga de 60px): créditos **Carabetta.xyz** (`© 2026`), não Escritório de Dados. “Dados: IBGE” aponta para o FTP dos Agregados por Setores 2022; “Censo Demográfico 2022” aponta para o dataset Censo 2022 na Base dos Dados (`https://basedosdados.org/dataset/08a1546e-251f-4546-9fe0-b1e6ab2b203d`); GitHub aponta para `https://github.com/JoaoCarabetta/dotmap`. Zoom `+/-` fica no canto inferior direito, logo acima do rodapé.
 - `js/map.js` e `js/events.js` — arquivos vazios; não assumir que a lógica mora aí.
 - `config.json` — fonte `censo2022` apontando para `data/tiles/censo2022.mbtiles`.
 - `makefiles.sh` — gera GeoJSON de pontos por zoom e junta em um único MBTiles. Aceita `./makefiles.sh RJ 3,4,5,6` para rebuild parcial (não apaga `tiles/`).
 - `scripts/build_municipality_rj.py` — agrega o CSV nacional + malha IBGE via mapshaper e escreve `municipality_RJ.geojson` (stdlib; sem geopandas).
 - `notebooks/treat_2022.ipynb` — cruza microdados do censo com geometria de setores.
-- `docs/docs.md` — zoom, densidade, schema demográfico, comportamento da legenda, basemap, chrome da sidebar (título/subtítulo, busca, créditos).
+- `docs/docs.md` — zoom, densidade, schema demográfico, filtro na legenda, basemap, chrome (intro top-left, legenda canto inferior esquerdo, rodapé slim; sem rail).
 - `docs/fontes.md` — URLs e caveats dos arquivos brutos do IBGE (raça nacional já baixada).
 - `docs/local-setup.md` — como juntar os tiles versionados e servir o mapa.
 - `docs/structure.md` — árvore do repositório.
@@ -82,7 +82,7 @@ Atributos esperados nos GeoJSON de polígonos: `populacao`, `branca`, `preta`, `
 
 Basemap: `mapbox://styles/mapbox/dark-v10`. Contornos de hover de setor/município usam `white` para ficar visíveis no fundo escuro. Cores dos pontos não mudam.
 
-Zoom do mapa: `minzoom` 2 no construtor (o Mapbox trata o mínimo como exclusivo, `zoom > min`, para o usuário alcançar o 3), max 14, centro inicial no Rio (`[-43.1729, -22.9068]`), zoom inicial 7. A source `points` declara `minzoom: 3` para não pedir PBF de z=2. Scroll zoom está desligado; navegação pelo controle no canto superior direito (em viewports ≤520px o controle vai para o canto inferior direito, para não cobrir o card).
+Zoom do mapa: `minzoom` 2 no construtor (o Mapbox trata o mínimo como exclusivo, `zoom > min`, para o usuário alcançar o 3), max 14, centro inicial no Rio (`[-43.1729, -22.9068]`), zoom inicial 7. A source `points` declara `minzoom: 3` para não pedir PBF de z=2. Scroll zoom está desligado; navegação pelo `NavigationControl` no canto inferior direito (`+/-`).
 
 A escala da legenda (`1 ponto = N pessoas`) em `index.html` **bate com o pipeline em 3–6** (24000 / 12000 / 6000 / 3000) e **não bate em 7–14**. Ao mudar densidade, atualize `makefiles.sh`, a legenda e `docs/docs.md`.
 
@@ -94,7 +94,7 @@ A escala da legenda (`1 ponto = N pessoas`) em `index.html` **bate com o pipelin
 - Comentários no código explicam o **porquê**, não o óbvio.
 - Implemente o pedido por completo; não deixe stubs, TODOs no lugar de código, nem extraia para `js/` sem mover de fato a lógica e atualizar o HTML.
 - Não commitar `data/`, tiles intermediários, `.env` ou tokens. O token Mapbox hoje está inline em `index.html`; não espalhe em mais lugares e não o coloque em docs públicos novos.
-- UI e copy do mapa em português (Brasil). Título do produto fica **Onde o Brasil mora** (h1/`<title>`); o subtítulo atual é **Cada ponto é um grupo de pessoas. A cor é a raça no Censo 2022.** (outras views reescrevem a explicação, não o h1). Nomes de categoria racial no código ficam sem acento (`indigena`, `preta`) para bater com os tiles.
+- UI e copy do mapa em português (Brasil). Título do produto fica **Onde o Brasil mora** (h1/`<title>`); o explainer no card esquerdo é **Cada ponto é um grupo de pessoas. A cor é a raça declarada no Censo Demográfico 2022 (IBGE). O número de pessoas por ponto muda com o zoom.** (outras views reescrevem a explicação, não o h1). Nomes de categoria racial no código ficam sem acento (`indigena`, `preta`) para bater com os tiles.
 - Preferir `uv` para Python. Não adicionar dependências sem necessidade.
 - Mudanças de UI (layout, estado, rotas, dados renderizados) precisam ser verificadas no browser, não só por leitura de código.
 

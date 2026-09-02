@@ -20,11 +20,11 @@ dotmap/
 ├── notebooks/
 │   └── treat_2022.ipynb      # Census + setor geometry → race GeoJSON
 ├── docs/
-│   ├── docs.md               # Zoom, density, data schema, legend behavior
+│   ├── docs.md               # Zoom, density, data schema, legend filter, two-card chrome, footer
 │   ├── fontes.md             # IBGE download URLs and raw-file caveats
 │   ├── local-setup.md        # How to merge tiles and serve locally
 │   └── structure.md          # This file
-├── assets/                   # Logo (not in git; header 404s without it)
+├── assets/                   # Optional extras (not in git; unused by the current UI)
 ├── tiles/                    # Per-zoom MBTiles committed in the repo
 └── data/                     # gitignored: merged MBTiles, GeoJSON, raw census
 ```

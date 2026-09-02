@@ -6,16 +6,15 @@ How to run the map on this machine. Verified 2026-09-02 with municipal zooms 3�
 
 In the repo:
 
-- `index.html` (map UI)
+- `index.html` (map UI; Mapbox **dark-v10** basemap; intro card top-left, legend bottom-left, slim footer)
 - `tiles/zoom3-3` … `tiles/zoom14-14` (per-zoom MBTiles, RJ; 3–6 are municipality dots)
 - `config.json` (expects a merged file at `data/tiles/censo2022.mbtiles`)
 
-Not in git (`data/` and `assets/` are missing on a fresh clone):
+Not in git (`data/` is missing on a fresh clone):
 
 - `data/tiles/censo2022.mbtiles` — build it with `tile-join` (below)
 - `data/censo2022/output/tiles/race/census_tract_RJ.geojson` — hover/tooltip from zoom 10
 - `data/censo2022/output/tiles/race/municipality_RJ.geojson` — hover/tooltip below zoom 10
-- `assets/logo.png` — header logo (page still works; image 404s)
 
 ## Dependencies
 
