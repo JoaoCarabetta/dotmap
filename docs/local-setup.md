@@ -1,20 +1,21 @@
 # Local setup
 
-How to run the map on this machine. Verified 2026-09-02 with municipal zooms 3–6 in `tiles/` and map `minzoom` 2 (Mapbox treats the floor as exclusive).
+How to run the map on this machine. Verified 2026-09-02 with per-UF tiles under `tiles/{UF}/` (27 UFs) and map `minzoom` 2 (Mapbox treats the floor as exclusive).
 
 ## What git gives you vs what it does not
 
 In the repo:
 
-- `index.html` (map UI; Mapbox **dark-v10** basemap; intro card top-left, legend bottom-left, slim footer)
-- `tiles/zoom3-3` … `tiles/zoom14-14` (per-zoom MBTiles, RJ; 3–6 are municipality dots)
+- `index.html` (map UI; Mapbox **light-v10** basemap with symbol/label layers hidden; opens on Brazil via `fitBounds`, not Rio)
+- `tiles/{UF}/zoom3-3` … `tiles/{UF}/zoom14-14` (per-UF MBTiles; 27 UFs; 3–6 are municipality dots)
 - `config.json` (expects a merged file at `data/tiles/censo2022.mbtiles`)
 
 Not in git (`data/` is missing on a fresh clone):
 
 - `data/tiles/censo2022.mbtiles` — build it with `tile-join` (below)
-- `data/censo2022/output/tiles/race/census_tract_RJ.geojson` — hover/tooltip from zoom 10
-- `data/censo2022/output/tiles/race/municipality_RJ.geojson` — hover/tooltip below zoom 10
+- `data/tiles/hover.mbtiles` — município (z3–9) and setor (z10–12, overzoom after) hover; `python3 scripts/ibge_uf.py tiles`
+- `data/censo2022/output/tiles/race/census_tract.geojson` — intermediate for hover tiles (do not load in the browser)
+- `data/censo2022/output/tiles/race/municipality.geojson` — intermediate for hover tiles
 
 ## Dependencies
 
@@ -27,17 +28,22 @@ Not in git (`data/` is missing on a fresh clone):
 
 `mapshaper` is only needed to **regenerate** dots via `makefiles.sh`, not to serve existing tiles.
 
-Do **not** run `./makefiles.sh` just to view the map. The script requires a UF argument (`./makefiles.sh RJ`) and needs GeoJSON under `data/` that is not in git. A full run regenerates every zoom including 7–14 (expensive). To rebuild only the municipal zooms: `./makefiles.sh RJ 3,4,5,6`. The script no longer deletes the whole `tiles/` tree.
+Do **not** run `./makefiles.sh` just to view the map. The script requires a UF argument (`./makefiles.sh RR`) and needs GeoJSON under `data/` that is not in git. A full run regenerates 7–14 for **that UF only**; other states in `tiles/` stay put. To rebuild only the municipal zooms: `./makefiles.sh RR 3,4,5,6`.
 
 ## Serve existing tiles (reproduced path)
 
 ```sh
 # 1. Merge the versioned per-zoom files into the path config.json expects.
-#    tile-join uses -f (overwrite), not --force.
+#    -f overwrites (not --force). --no-tile-size-limit is required: tippecanoe's
+#    default 500KB/tile drops the SP+MG overlap at z7 (XYZ 7/47/72, ~508KB)
+#    and São Paulo goes blank even though tiles/SP/ exists for all 27 UFs.
 mkdir -p data/tiles
-tile-join -f -o data/tiles/censo2022.mbtiles tiles/*/tiles.mbtiles
+tile-join -f --no-tile-size-limit -o data/tiles/censo2022.mbtiles tiles/*/*/tiles.mbtiles
+python3 scripts/ibge_uf.py tiles
 
-# 2. Vector tiles (must stay on 8080; index.html hardcodes that host/port)
+# 2. Vector tiles (must stay on 8080; index.html hardcodes that host/port).
+#    Full tileserver-gl can fail on Node 23 (native mbgl); use light then:
+#    npx --yes tileserver-gl-light@4.1.1 -c config.json
 npx --yes tileserver-gl -c config.json -V
 
 # 3. UI. Default in the README is 8000; use another port if 8000 is taken
@@ -47,12 +53,16 @@ uv run python -m http.server 8001
 
 Open `http://localhost:8001`. Tiles are requested from `http://localhost:8080/data/censo2022/{z}/{x}/{y}.pbf`.
 
+On localhost a top-right **dev** button (or `D` / `` ` ``) toggles a HUD. Zoom and raio are sliders (raio is a 0.5×–3× multiplier on the coded radius curve; **reset** returns to 1×). `1` jumps to the Brazil overview; `2` jumps to Rio at zoom 15 (tiles still max out at 14). It is not injected on `carabetta.xyz`.
+
 Sanity checks used in the reproduction:
 
 - `GET /data/censo2022.json` → `minzoom` 3, `maxzoom` 14, layer `points`, field `race`
 - Sample PBF at zoom 3 (`3/3/4.pbf`), zoom 4 (`4/6/9.pbf`) and zoom 7 (`7/48/72.pbf`) return 200
+- SP at z7 (`7/47/72.pbf`, TMS `7/47/55`) is present and large (~508 KB). A join without `--no-tile-size-limit` drops it.
+- If 8080 is down, Mapbox overzooms the last cached zoom and 10–14 look frozen even though native tiles exist.
 - A real browser over the RJ center requested zooms 3–12 and received 200s
-- `census_tract_RJ.geojson`, `municipality_RJ.geojson`, and `assets/logo.png` return 404 until those files are restored
+- Hover is `GET /data/hover/{z}/{x}/{y}.pbf` (not the GeoJSON). Rebuild with `python3 scripts/ibge_uf.py tiles` after the concatenated files exist.
 
 ## Public URL
 
@@ -63,12 +73,18 @@ The map is published at [https://carabetta.xyz/dataviz/brazildots/](https://cara
 Needs GCP access to `rj-escritorio-dev` and raw files that live only under `data/`.
 
 1. Run the BigQuery notebook linked from [README.md](../README.md).
-2. Or run [notebooks/treat_2022.ipynb](../notebooks/treat_2022.ipynb) against `data/censo2022/raw/censo.csv` + `setores.gpkg` for census-tract GeoJSON. For municipality dots (zooms 3–6), run `python3 scripts/build_municipality_rj.py` against the national race CSV + IBGE malha — see [fontes.md](fontes.md).
-3. Generate dots and MBTiles. A full run regenerates 7–14 (expensive). Partial rebuild does not delete other zooms:
+2. Or build one UF at a time (stdlib + mapshaper; no geopandas). See [fontes.md](fontes.md):
 
 ```sh
-./makefiles.sh RJ            # all zooms 3–14
-./makefiles.sh RJ 3,4,5,6    # municipal zooms only
+python3 scripts/build_municipality.py RR
+python3 scripts/build_census_tract.py RR
+```
+
+3. Generate dots and MBTiles for that UF. A full run regenerates 7–14 for that state only:
+
+```sh
+./makefiles.sh RR            # all zooms 3–14 for RR, then tile-join every UF
+./makefiles.sh RR 3,4,5,6    # municipal zooms only
 ```
 
 4. Then serve as in the section above. `makefiles.sh` already writes `data/tiles/censo2022.mbtiles`.

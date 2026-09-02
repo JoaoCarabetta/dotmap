@@ -333,6 +333,237 @@
             border-bottom: none !important;
         }
 
+        /* Local-only HUD: top-right so it never covers intro, legend, zoom, or footer.
+           Injected in JS on loopback hosts; these rules are inert on carabetta.xyz. */
+        .dev-toggle {
+            position: fixed;
+            top: var(--chrome-inset);
+            right: var(--chrome-inset);
+            z-index: 130;
+            margin: 0;
+            padding: 3px 8px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background: #111;
+            color: #eee;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 11px;
+            line-height: 1.2;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            opacity: 0.65;
+        }
+
+        .dev-toggle:hover,
+        .dev-toggle[aria-pressed="true"] {
+            opacity: 1;
+        }
+
+        .dev-panel {
+            position: fixed;
+            top: calc(var(--chrome-inset) + 30px);
+            right: var(--chrome-inset);
+            z-index: 130;
+            box-sizing: border-box;
+            width: 300px;
+            max-height: calc(100vh - var(--chrome-inset) - 90px);
+            overflow-y: auto;
+            margin: 0;
+            padding: 8px 10px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background: rgba(17, 17, 17, 0.92);
+            color: #f1f3f4;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 11px;
+            line-height: 1.45;
+        }
+
+        .dev-panel[hidden] {
+            display: none;
+        }
+
+        .dev-panel dl {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 0 10px;
+            margin: 0;
+        }
+
+        .dev-panel dt {
+            margin: 0;
+            color: #9aa0a6;
+        }
+
+        .dev-panel dd {
+            margin: 0;
+            text-align: right;
+            word-break: break-all;
+        }
+
+        .dev-jumps {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #333;
+        }
+
+        .dev-jumps button {
+            flex: 1;
+            margin: 0;
+            padding: 3px 6px;
+            border: 1px solid #555;
+            border-radius: 3px;
+            background: #222;
+            color: #eee;
+            font: inherit;
+            cursor: pointer;
+        }
+
+        .dev-jumps button:hover {
+            background: #333;
+        }
+
+        .dev-ctrls {
+            display: grid;
+            gap: 6px;
+            margin: 0 0 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #333;
+        }
+
+        .dev-ctrl {
+            display: grid;
+            grid-template-columns: 36px 1fr 52px;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .dev-ctrl-radius {
+            grid-template-columns: 36px 1fr 44px 46px 40px;
+        }
+
+        .dev-ctrl label {
+            color: #9aa0a6;
+        }
+
+        .dev-ctrl input[type="range"] {
+            width: 100%;
+            margin: 0;
+            accent-color: #bbb;
+        }
+
+        .dev-ctrl input[type="number"] {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 1px 2px;
+            border: 1px solid #555;
+            border-radius: 3px;
+            background: #111;
+            color: #eee;
+            font: inherit;
+            text-align: right;
+        }
+
+        .dev-ctrl-px {
+            color: #9aa0a6;
+            text-align: right;
+        }
+
+        .dev-ctrl button {
+            margin: 0;
+            padding: 2px 4px;
+            border: 1px solid #555;
+            border-radius: 3px;
+            background: #222;
+            color: #eee;
+            font: inherit;
+            cursor: pointer;
+        }
+
+        /* Compact palette tester: stays under the HUD, never a second product card. */
+        .dev-colors {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #333;
+        }
+
+        .dev-colors-head {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .dev-colors-head label {
+            color: #9aa0a6;
+            flex: 0 0 auto;
+        }
+
+        .dev-colors-head select {
+            flex: 1;
+            min-width: 0;
+            padding: 1px 2px;
+            border: 1px solid #555;
+            border-radius: 3px;
+            background: #111;
+            color: #eee;
+            font: inherit;
+        }
+
+        .dev-swatches {
+            list-style: none;
+            margin: 0 0 6px;
+            padding: 0;
+        }
+
+        .dev-swatches li {
+            display: grid;
+            grid-template-columns: 10px 68px 1fr;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .dev-swatch {
+            width: 10px;
+            height: 10px;
+            border-radius: 1px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+        }
+
+        .dev-swatches .dev-hex {
+            color: #9aa0a6;
+            text-align: right;
+        }
+
+        .dev-color-btns {
+            display: flex;
+            gap: 4px;
+        }
+
+        .dev-color-btns button {
+            flex: 1;
+            margin: 0;
+            padding: 3px 4px;
+            border: 1px solid #555;
+            border-radius: 3px;
+            background: #222;
+            color: #eee;
+            font: inherit;
+            cursor: pointer;
+        }
+
+        .dev-color-btns button:hover {
+            background: #333;
+        }
+
+        .dev-permute-meta {
+            margin: 4px 0 0;
+            color: #9aa0a6;
+            text-align: right;
+        }
+
         @media (max-width: 860px) {
             .intro-card {
                 width: min(340px, calc(100vw - 28px));
@@ -379,41 +610,42 @@
     <ul class="legend-races" id="legend-races">
         <li class="race-row" data-race="branca">
             <button type="button" class="race-row-toggle" role="checkbox" aria-checked="true">
-                <span class="race-swatch" style="background-color: #fb3640;"></span>
+                <!-- ColorBrewer Set1, permuted from HUD test; holds contrast on light-v10 -->
+                <span class="race-swatch" style="background-color: #4daf4a;"></span>
                 <span class="race-row-label">Branca</span>
             </button>
             <button type="button" class="solo-button" title="Mostrar só esta categoria" aria-label="Mostrar só Branca">S</button>
         </li>
         <li class="race-row" data-race="preta">
             <button type="button" class="race-row-toggle" role="checkbox" aria-checked="true">
-                <span class="race-swatch" style="background-color: #fff07c;"></span>
+                <span class="race-swatch" style="background-color: #ff7f00;"></span>
                 <span class="race-row-label">Preta</span>
             </button>
             <button type="button" class="solo-button" title="Mostrar só esta categoria" aria-label="Mostrar só Preta">S</button>
         </li>
         <li class="race-row" data-race="amarela">
             <button type="button" class="race-row-toggle" role="checkbox" aria-checked="true">
-                <span class="race-swatch" style="background-color: #89ffa7;"></span>
+                <span class="race-swatch" style="background-color: #377eb8;"></span>
                 <span class="race-row-label">Amarela</span>
             </button>
             <button type="button" class="solo-button" title="Mostrar só esta categoria" aria-label="Mostrar só Amarela">S</button>
         </li>
         <li class="race-row" data-race="parda">
             <button type="button" class="race-row-toggle" role="checkbox" aria-checked="true">
-                <span class="race-swatch" style="background-color: #3899c9;"></span>
+                <span class="race-swatch" style="background-color: #e41a1c;"></span>
                 <span class="race-row-label">Parda</span>
             </button>
             <button type="button" class="solo-button" title="Mostrar só esta categoria" aria-label="Mostrar só Parda">S</button>
         </li>
         <li class="race-row" data-race="indigena">
             <button type="button" class="race-row-toggle" role="checkbox" aria-checked="true">
-                <span class="race-swatch" style="background-color: #e8800c;"></span>
+                <span class="race-swatch" style="background-color: #984ea3;"></span>
                 <span class="race-row-label">Indígena</span>
             </button>
             <button type="button" class="solo-button" title="Mostrar só esta categoria" aria-label="Mostrar só Indígena">S</button>
         </li>
     </ul>
-    <p class="dot-scale" id="dot-scale">1 ponto = 2.000 pessoas</p>
+    <p class="dot-scale" id="dot-scale">1 ponto = 24.000 pessoas</p>
 </aside>
 <!-- Hidden template cloned into the Mapbox popup so hover numbers follow the cursor. -->
 <div id="tooltip-template" style="display: none;">
@@ -455,14 +687,20 @@
     mapboxgl.accessToken = 'pk.eyJ1IjoiZXNjcml0b3Jpb2RlZGFkb3MiLCJhIjoiY2t3bWdmcHpjMmJ2cTJucWJ4MGQ1Mm1kbiJ9.4hHJX-1pSevYoBbja7Pq4w';
     var map = new mapboxgl.Map({
         container: 'map',
-        // dark-v10: streets stay readable without competing with the race-dot colors.
-        style: 'mapbox://styles/mapbox/dark-v10',
-        center: [-43.1729, -22.9068], // Longitude, Latitude for Rio de Janeiro, Brazil
-        zoom: 7, // Start at the RJ metro view
-        maxzoom: 14,
-        // Mapbox treats minzoom as exclusive (visible when zoom > min), so 2 is required to reach the z=3 tiles.
-        minzoom: 2
+        // light-v10 keeps land/water, coast, admin lines, and light roads so Brazil is readable.
+        // Symbol/label layers are turned off after load so names do not sit on the dots.
+        style: 'mapbox://styles/mapbox/light-v10',
+        // Country overview until fitBounds runs; geographic center of continental Brazil.
+        center: [-51.9, -14.2],
+        zoom: 3.5,
+        // Camera can overzoom to 15 (dev Rio shortcut); PBF tiles still stop at 14.
+        maxZoom: 15,
+        // Mapbox treats minZoom as exclusive (visible when zoom > min), so 2 is required to reach the z=3 tiles.
+        minZoom: 2
     });
+
+    // SW/NE so Norte (Amapá), Sul (RS), Acre, and the Atlantic stay on screen across viewports.
+    const BRAZIL_BOUNDS = [[-74, -34], [-32, 6]];
     
     // Bottom-right like Google Maps zoom +/-; compass stays off so the stack is just +/−.
     map.addControl(new mapboxgl.NavigationControl({showCompass: false}), 'bottom-right');
@@ -541,24 +779,98 @@
     });
     document.getElementById('search-slot').appendChild(geocoder.onAdd(map));
 
-    function updateDotScale() {
-        const zoom = map.getZoom().toFixed(0);
-        // Legend copy must track zoom so "1 ponto = N pessoas" matches the visible tiles.
-        let scale;
-        switch(parseInt(zoom)) {
-            case 13: scale = 40; break;  // Census tract level
-            case 12: scale = 60; break;  // Census tract level
-            case 11: scale = 120; break; // Census tract level 
-            case 10: scale = 200; break; // Census tract level
-            case 9: scale = 500; break;  // Census tract level
-            case 8: scale = 1000; break; // Census tract level
-            case 7: scale = 2000; break; // City level
-            case 6: scale = 3000; break; // City level
-            case 5: scale = 6000; break; // City level
-            case 4: scale = 12000; break; // City level
-            case 3: scale = 24000; break; // City level — 2× zoom 4 so the RJ cluster stays readable at continent scale
-            default: scale = 1000;
+    // How dots were generated (makefiles.sh), not which polygon hover is active (that flips at 10).
+    function tileGeometrySource(zoom) {
+        const z = parseInt(Number(zoom).toFixed(0), 10);
+        if (z < 3) return '—';
+        if (z <= 6) return 'município';
+        if (z <= 14) return 'setor';
+        // Camera maxZoom 15 overzooms the z=14 census tiles; nothing is generated at 15.
+        return 'setor (overzoom)';
+    }
+
+    // Same table as makefiles.sh per_dot_values so legend + HUD match the tiles.
+    function peoplePerDot(zoom) {
+        switch (parseInt(Number(zoom).toFixed(0), 10)) {
+            case 2:
+            case 3: return 24000;
+            case 4: return 12000;
+            case 5: return 6000;
+            case 6: return 3000;
+            case 7: return 150;
+            case 8: return 120;
+            case 9: return 90;
+            case 10: return 70;
+            case 11: return 50;
+            case 12: return 35;
+            case 13: return 25;
+            case 14:
+            case 15: return 20;
+            default: return 20;
         }
+    }
+
+    // Same stops as the points layer interpolate — one table for paint + HUD.
+    // ×1.2 at every zoom; explicit z12 hold so the extra ×1.5 at z13 is a step, not a ramp from 12.
+    // per_dot is unchanged — these numbers are visual size only.
+    const CIRCLE_RADIUS_STOPS = [
+        3, 0.8 * 1.2,
+        7, 0.8 * 1.2,
+        12, (0.8 + 0.4 * 5 / 6) * 1.2,
+        13, 1.2 * 1.2 * 1.5
+    ];
+
+    // Local HUD multiplier on top of the coded curve; 1 = as written. Production never sees this.
+    const DEV_RADIUS_STORAGE = 'dotmap-dev-radius-mult';
+    let radiusMultiplier = 1;
+
+    function circleRadiusBaseForZoom(zoom) {
+        const stops = CIRCLE_RADIUS_STOPS;
+        const z0 = stops[0];
+        const v0 = stops[1];
+        const zN = stops[stops.length - 2];
+        const vN = stops[stops.length - 1];
+        if (zoom <= z0) return v0;
+        if (zoom >= zN) return vN;
+        for (let i = 0; i < stops.length - 2; i += 2) {
+            const za = stops[i];
+            const va = stops[i + 1];
+            const zb = stops[i + 2];
+            const vb = stops[i + 3];
+            if (zoom >= za && zoom <= zb) {
+                if (zb === za) return vb;
+                return va + (vb - va) * ((zoom - za) / (zb - za));
+            }
+        }
+        return vN;
+    }
+
+    function circleRadiusForZoom(zoom) {
+        return circleRadiusBaseForZoom(zoom) * radiusMultiplier;
+    }
+
+    function applyRadiusMultiplier(mult) {
+        const n = Number(mult);
+        radiusMultiplier = Math.min(3, Math.max(0.5, Number.isFinite(n) ? n : 1));
+        try {
+            sessionStorage.setItem(DEV_RADIUS_STORAGE, String(radiusMultiplier));
+        } catch (e) { /* private mode */ }
+        if (!map.getLayer('points')) return;
+        const stops = [];
+        for (let i = 0; i < CIRCLE_RADIUS_STOPS.length; i += 2) {
+            stops.push(CIRCLE_RADIUS_STOPS[i], CIRCLE_RADIUS_STOPS[i + 1] * radiusMultiplier);
+        }
+        map.setPaintProperty('points', 'circle-radius', [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            ...stops
+        ]);
+    }
+
+    function updateDotScale() {
+        // Legend copy must track zoom so "1 ponto = N pessoas" matches the visible tiles.
+        const scale = peoplePerDot(map.getZoom());
         document.getElementById('dot-scale').textContent = `1 ponto = ${scale.toLocaleString()} pessoas`;
     }
 
@@ -595,9 +907,141 @@
         return template;
     }
 
+    // Stable tile keys. HUD palettes keep this order when assigning the 5 hues.
+    const RACE_KEYS = ['branca', 'preta', 'amarela', 'parda', 'indigena'];
+
+    // Product default — also HUD "Atual". ColorBrewer Set1 hues, permuted from HUD test; contrast holds on light-v10.
+    const DEFAULT_RACE_COLORS = ['#4daf4a', '#ff7f00', '#377eb8', '#e41a1c', '#984ea3'];
+
+    function colorsFromHues(hues) {
+        const out = {};
+        RACE_KEYS.forEach(function (key, i) {
+            out[key] = hues[i];
+        });
+        return out;
+    }
+
+    function raceColorMatchExpression(hues) {
+        const colors = colorsFromHues(hues);
+        return [
+            'match',
+            ['get', 'race'],
+            'branca', colors.branca,
+            'preta', colors.preta,
+            'amarela', colors.amarela,
+            'parda', colors.parda,
+            'indigena', colors.indigena,
+            '#ccc'
+        ];
+    }
+
+    function applyRaceColors(hues) {
+        if (map.getLayer('points')) {
+            map.setPaintProperty('points', 'circle-color', raceColorMatchExpression(hues));
+        }
+        document.querySelectorAll('#legend-races .race-row').forEach(function (row) {
+            const i = RACE_KEYS.indexOf(row.dataset.race);
+            const swatch = row.querySelector('.race-swatch');
+            if (swatch && i >= 0) swatch.style.backgroundColor = hues[i];
+        });
+    }
+
+    function isLocalDevHost(hostname) {
+        const host = hostname || location.hostname;
+        return host === 'localhost' || host === '127.0.0.1' || host === '::1' || host.endsWith('.localhost');
+    }
+
+    // Localhost-only presets. Each list is 5 hues for RACE_KEYS; none is pale enough to vanish on light-v10.
+    const DEV_PALETTES = [
+        { id: 'atual', name: 'Atual', colors: ['#4daf4a', '#ff7f00', '#377eb8', '#e41a1c', '#984ea3'] },
+        { id: 'dark2', name: 'Dark2', colors: ['#1b9e77', '#d95f02', '#7570b3', '#e7298a', '#66a61e'] },
+        { id: 'set1', name: 'Set1', colors: ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00'] },
+        // Okabe–Ito minus #F0E442: that yellow is as weak on light-v10 as the old #fff07c.
+        { id: 'okabe', name: 'Okabe–Ito', colors: ['#0072B2', '#D55E00', '#009E73', '#CC79A7', '#E69F00'] },
+        { id: 'print', name: 'Print', colors: ['#111111', '#c51b8a', '#2171b5', '#238b45', '#d94801'] },
+        { id: 'terra', name: 'Terra', colors: ['#8c2d04', '#238443', '#225ea8', '#6a51a3', '#cc4c02'] }
+    ];
+
+    const DEV_PALETTE_STORAGE = 'dotmap-dev-palette';
+    const DEV_PERMUTE_STORAGE = 'dotmap-dev-permute';
+    const DEV_HUES_STORAGE = 'dotmap-dev-hues';
+    let devPaletteId = 'atual';
+    let devPermuteShift = 0;
+    let devWorkingHues = DEFAULT_RACE_COLORS.slice();
+
+    function paletteById(id) {
+        return DEV_PALETTES.find(function (p) { return p.id === id; }) || DEV_PALETTES[0];
+    }
+
+    function rotateHues(hues, shift) {
+        const n = hues.length;
+        const s = ((shift % n) + n) % n;
+        return hues.map(function (_, i) {
+            return hues[(i + s) % n];
+        });
+    }
+
+    function currentDevHues() {
+        return rotateHues(devWorkingHues, devPermuteShift);
+    }
+
+    function persistDevPalette() {
+        try {
+            sessionStorage.setItem(DEV_PALETTE_STORAGE, devPaletteId);
+            sessionStorage.setItem(DEV_PERMUTE_STORAGE, String(devPermuteShift));
+            sessionStorage.setItem(DEV_HUES_STORAGE, JSON.stringify(devWorkingHues));
+        } catch (e) { /* private mode */ }
+    }
+
+    function refreshDevColorUi() {
+        const select = document.getElementById('dev-palette');
+        if (select) select.value = devPaletteId;
+        const list = document.getElementById('dev-swatches');
+        if (list) {
+            const hues = currentDevHues();
+            list.innerHTML = RACE_KEYS.map(function (key, i) {
+                return '<li><span class="dev-swatch" style="background:' + hues[i] + '"></span>' +
+                    '<span>' + key + '</span><span class="dev-hex">' + hues[i] + '</span></li>';
+            }).join('');
+        }
+        const meta = document.getElementById('dev-permute-meta');
+        if (meta) {
+            const base = paletteById(devPaletteId).colors;
+            const shuffled = !devWorkingHues.every(function (c, i) {
+                return c.toLowerCase() === base[i].toLowerCase();
+            });
+            meta.textContent = (shuffled ? 'shuf · ' : '') + 'rot ' + (devPermuteShift + 1) + '/5';
+        }
+    }
+
+    function applyDevPalette() {
+        if (!isLocalDevHost()) return;
+        applyRaceColors(currentDevHues());
+        refreshDevColorUi();
+    }
+
     // ------- LOADERS ----------
 
+    function hideBasemapLabels() {
+        const style = map.getStyle();
+        if (!style || !style.layers) return;
+        style.layers.forEach(function (layer) {
+            // Names fight the dots; leave fill/line/background so the country still has shape.
+            if (layer.type === 'symbol') {
+                map.setLayoutProperty(layer.id, 'visibility', 'none');
+            }
+        });
+    }
+
+    // style.load covers a later setStyle; load covers the first paint in GL 2.3.1.
+    map.on('style.load', hideBasemapLabels);
+
     map.on('load', function () {
+        hideBasemapLabels();
+        // Camera first so the first tile requests are country-scale, not a leftover Rio close-up.
+        map.fitBounds(BRAZIL_BOUNDS, { padding: 48, duration: 0 });
+        refreshDevPanel();
+
         map.addSource('points', {
             type: 'vector',
             tiles: [
@@ -618,29 +1062,23 @@
                 'interpolate',
                 ['linear'],
                 ['zoom'],
-                3, 0.8,
-                7, 0.8,
-                13, 1.2,
+                ...CIRCLE_RADIUS_STOPS,
             ],
-                'circle-color': [
-                    'match',
-                    ['get', 'race'],
-                    'branca', '#fb3640',   // Darker pink for branca
-                    'preta', '#fff07c',    // Deep gray for preta
-                    'amarela', '#89ffa7',  // Bright yellow for amarela
-                    'parda', '#3899c9',    // Rich dark orange for parda
-                    'indigena', '#e8800c', // Vivid teal for indigena
-                    /* other */ '#ccc'      // Default color
-                ]
+                'circle-color': raceColorMatchExpression(DEFAULT_RACE_COLORS)
             }
         });
-
+        // Localhost may have a stored tester palette; production never calls this.
+        applyDevPalette();
 
         map.addSource('setores', {
-            'type': 'geojson',
-            // Concatenated hover of every built UF (simplified). Per-UF files stay full-res for dots.
-            'data': 'data/censo2022/output/tiles/race/census_tract.geojson',
-            'generateId': true
+            type: 'vector',
+            // National census_tract.geojson is ~248MB and freezes Mapbox at
+            // high zoom (Salvador / SP). Hover reads vector tiles instead.
+            tiles: [
+                'http://localhost:8080/data/hover/{z}/{x}/{y}.pbf',
+            ],
+            minzoom: 10,
+            maxzoom: 12,
         });
 
 
@@ -649,8 +1087,17 @@
                 'id': 'setores-fill',
                 'type': 'fill',
                 'source': 'setores',
+                'source-layer': 'setores',
+                minzoom: 10,
                 'paint': {
-                    'fill-opacity': 0,
+                    // Dark tint on hover so the setor reads on light-v10; 0 keeps the layer as a hit target only.
+                    'fill-color': '#202124',
+                    'fill-opacity': [
+                        'case',
+                        ['boolean', ['feature-state', 'hover'], false],
+                        0.08,
+                        0
+                    ],
                 },
             }
         )
@@ -660,9 +1107,11 @@
                 'id': 'setores-border',
                 'type': 'line',
                 'source': 'setores',
+                'source-layer': 'setores',
+                minzoom: 10,
                 'paint': {
-                    // White so the hover stroke stays visible on the dark basemap.
-                    'line-color':  'white',
+                    // Near-black so the hover stroke stays visible on the light basemap.
+                    'line-color':  '#202124',
                     'line-width': 1,
                     'line-opacity': [
                         'case',
@@ -672,10 +1121,12 @@
             });
         
         map.addSource('municipios', {
-            'type': 'geojson',
-            // Concatenated hover of every built UF (RJ + wave-1 North).
-            'data': 'data/censo2022/output/tiles/race/municipality.geojson',
-            'generateId': true
+            type: 'vector',
+            tiles: [
+                'http://localhost:8080/data/hover/{z}/{x}/{y}.pbf',
+            ],
+            minzoom: 3,
+            maxzoom: 9,
         });
 
 
@@ -684,8 +1135,17 @@
                 'id': 'municipios-fill',
                 'type': 'fill',
                 'source': 'municipios',
+                'source-layer': 'municipios',
+                maxzoom: 10,
                 'paint': {
-                    'fill-opacity': 0,
+                    // Same hover tint as setores so município outlines do not vanish on light-v10.
+                    'fill-color': '#202124',
+                    'fill-opacity': [
+                        'case',
+                        ['boolean', ['feature-state', 'hover'], false],
+                        0.08,
+                        0
+                    ],
                 }
             }
         )
@@ -695,9 +1155,11 @@
                 'id': 'municipios-border',
                 'type': 'line',
                 'source': 'municipios',
+                'source-layer': 'municipios',
+                maxzoom: 10,
                 'paint': {
-                    // White so the hover stroke stays visible on the dark basemap.
-                    'line-color':  'white',
+                    // Near-black so the hover stroke stays visible on the light basemap.
+                    'line-color':  '#202124',
                     'line-width': 1.2,
                     'line-opacity': [
                         'case',
@@ -708,15 +1170,15 @@
         )
 
         updateDotScale();
-
-        // Add this after all your custom layers to ensure city labels are on top
-        map.moveLayer('settlement-label');  // Move city names to top
-        // map.moveLayer('settlement-subdivision-label');  // Move district names to top
-        // map.moveLayer('settlement-minor-label');  // Move smaller settlement names to top
-        
+        // Re-apply a stored HUD multiplier after the layer exists.
+        applyRadiusMultiplier(radiusMultiplier);
     });
 
     let censusTractID = null;
+    // Vector hover tiles need sourceLayer; GeoJSON generateId was enough before.
+    function hoverRef(source, id) {
+        return { source: source, sourceLayer: source, id: id };
+    }
 
     map.on('mousemove', 'setores-fill', (event) => {
         map.getCanvas().style.cursor = 'pointer';
@@ -726,24 +1188,13 @@
         // ------ BORDER EFFECT --------- //
         if (map.getZoom() >= 10) {
             if (censusTractID) {
-                map.removeFeatureState({
-                source: 'setores',
-                id: censusTractID
-                });
+                map.removeFeatureState(hoverRef('setores', censusTractID));
             }
             
             censusTractID = event.features[0].id;
         
         
-            map.setFeatureState(
-                {
-                source: 'setores',
-                id: censusTractID
-                },
-                {
-                hover: true
-                }
-            );
+            map.setFeatureState(hoverRef('setores', censusTractID), { hover: true });
         
         
             // ------ TOOLTIP EFFECT --------- //
@@ -766,15 +1217,7 @@
 
     map.on('mouseleave', 'setores-fill', () => {
         if (censusTractID) {
-            map.setFeatureState(
-                {
-                source: 'setores',
-                id: censusTractID
-                },
-                {
-                hover: false
-                }
-            );
+            map.setFeatureState(hoverRef('setores', censusTractID), { hover: false });
         }
         map.getCanvas().style.cursor = '';
         popup.remove();
@@ -793,23 +1236,12 @@
         if (map.getZoom() < 10) {
             
             if (municipalityID) {
-                map.removeFeatureState({
-                source: 'municipios',
-                id: municipalityID
-                });
+                map.removeFeatureState(hoverRef('municipios', municipalityID));
             }
             
             municipalityID = event.features[0].id;
 
-            map.setFeatureState(
-                {
-                source: 'municipios',
-                id: municipalityID
-                },
-                {
-                hover: true
-                }
-            );
+            map.setFeatureState(hoverRef('municipios', municipalityID), { hover: true });
         
             // ------ TOOLTIP EFFECT --------- //
             const properties = event.features[0].properties;
@@ -831,15 +1263,7 @@
     
     map.on('mouseleave', 'municipios-fill', () => {
         if (municipalityID) {
-            map.setFeatureState(
-                {
-                source: 'municipios',
-                id: municipalityID
-                },
-                {
-                hover: false
-                }
-            );
+            map.setFeatureState(hoverRef('municipios', municipalityID), { hover: false });
         }
         map.getCanvas().style.cursor = '';
         popup.remove();
@@ -847,7 +1271,12 @@
 
     map.on('zoom', function () {
         updateDotScale();
-    })
+        refreshDevPanel();
+    });
+
+    map.on('move', function () {
+        refreshDevPanel();
+    });
     
     map.on('zoomend', function () {
         
@@ -855,27 +1284,11 @@
         
        if (map.getZoom() >= 10) {
             if (municipalityID) {
-                map.setFeatureState(
-                    {
-                    source: 'municipios',
-                    id: municipalityID
-                    },
-                    {
-                    hover: false
-                    }
-                );
+                map.setFeatureState(hoverRef('municipios', municipalityID), { hover: false });
             }
         } else {
             if (censusTractID) {
-                map.setFeatureState(
-                    {
-                    source: 'setores',
-                    id: censusTractID
-                    },
-                    {
-                    hover: false
-                    }
-                );
+                map.setFeatureState(hoverRef('setores', censusTractID), { hover: false });
             }
         }
         // Drop the popup when the hover layer switches so a município tooltip
@@ -883,7 +1296,7 @@
         popup.remove();
     });
 
-    const ALL_RACES = ['branca', 'preta', 'amarela', 'parda', 'indigena'];
+    const ALL_RACES = RACE_KEYS;
     const activeRaces = new Set(ALL_RACES);
     const raceRows = document.querySelectorAll('#legend-races .race-row');
 
@@ -942,6 +1355,254 @@
             false
         ]);
     }
+
+    // ------- LOCAL DEV HUD --------
+    // Loopback only: carabetta.xyz must never see the toggle or the panel.
+
+    const DEV_PANEL_STORAGE = 'dotmap-dev-panel';
+    let devPanelEl = null;
+    let devToggleEl = null;
+
+    function refreshDevPanel() {
+        if (!devPanelEl || devPanelEl.hidden) return;
+        const zoom = map.getZoom();
+        const center = map.getCenter();
+        const bounds = map.getBounds();
+        const sw = bounds.getSouthWest();
+        const ne = bounds.getNorthEast();
+        const zoomSlider = document.getElementById('dev-zoom-slider');
+        const zoomNum = document.getElementById('dev-zoom-num');
+        if (zoomSlider && document.activeElement !== zoomNum) {
+            zoomSlider.value = String(zoom);
+            zoomNum.value = zoom.toFixed(2);
+        }
+        document.getElementById('dev-per-dot').textContent = peoplePerDot(zoom).toLocaleString();
+        const radiusPx = document.getElementById('dev-radius-px');
+        const radiusMult = document.getElementById('dev-radius-mult');
+        const radiusSlider = document.getElementById('dev-radius-slider');
+        if (radiusPx) radiusPx.textContent = circleRadiusForZoom(zoom).toFixed(2) + 'px';
+        if (radiusMult && document.activeElement !== radiusMult) {
+            radiusSlider.value = String(radiusMultiplier);
+            radiusMult.value = radiusMultiplier.toFixed(2);
+        }
+        document.getElementById('dev-center').textContent = center.lng.toFixed(3) + ', ' + center.lat.toFixed(3);
+        document.getElementById('dev-bounds').textContent =
+            sw.lng.toFixed(2) + ',' + sw.lat.toFixed(2) + ' / ' + ne.lng.toFixed(2) + ',' + ne.lat.toFixed(2);
+        document.getElementById('dev-hover').textContent = zoom >= 10 ? 'setor' : 'município';
+        document.getElementById('dev-source').textContent = tileGeometrySource(zoom);
+    }
+
+    function setDevPanelOpen(open) {
+        if (!devPanelEl || !devToggleEl) return;
+        devPanelEl.hidden = !open;
+        devToggleEl.setAttribute('aria-pressed', open ? 'true' : 'false');
+        try {
+            sessionStorage.setItem(DEV_PANEL_STORAGE, open ? '1' : '0');
+        } catch (e) { /* private mode */ }
+        if (open) refreshDevPanel();
+    }
+
+    function initDevPanel() {
+        if (!isLocalDevHost()) return;
+
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.id = 'dev-toggle';
+        toggle.className = 'dev-toggle';
+        toggle.setAttribute('aria-controls', 'dev-panel');
+        toggle.setAttribute('aria-pressed', 'false');
+        toggle.title = 'Painel de desenvolvimento (D ou `)';
+        toggle.textContent = 'dev';
+
+        const panel = document.createElement('aside');
+        panel.id = 'dev-panel';
+        panel.className = 'dev-panel';
+        panel.hidden = true;
+        panel.setAttribute('aria-label', 'Painel de desenvolvimento');
+        panel.innerHTML =
+            '<div class="dev-ctrls">' +
+            '<div class="dev-ctrl">' +
+            '<label for="dev-zoom-slider">zoom</label>' +
+            '<input id="dev-zoom-slider" type="range" min="2" max="15" step="0.05">' +
+            '<input id="dev-zoom-num" type="number" min="2" max="15" step="0.1">' +
+            '</div>' +
+            '<div class="dev-ctrl dev-ctrl-radius">' +
+            '<label for="dev-radius-slider">raio</label>' +
+            '<input id="dev-radius-slider" type="range" min="0.5" max="3" step="0.05" value="1">' +
+            '<input id="dev-radius-mult" type="number" min="0.5" max="3" step="0.05" value="1" title="Multiplicador sobre a curva por zoom">' +
+            '<span class="dev-ctrl-px" id="dev-radius-px"></span>' +
+            '<button type="button" id="dev-radius-reset" title="Volta à curva ×1.2 / ×1.2×1.5">reset</button>' +
+            '</div>' +
+            '</div>' +
+            '<dl>' +
+            '<dt>pessoas/ponto</dt><dd id="dev-per-dot"></dd>' +
+            '<dt>centro</dt><dd id="dev-center"></dd>' +
+            '<dt>bbox</dt><dd id="dev-bounds"></dd>' +
+            '<dt>hover</dt><dd id="dev-hover"></dd>' +
+            '<dt title="Unidade usada em makefiles.sh para gerar os tiles, não o polígono do hover">fonte</dt><dd id="dev-source"></dd>' +
+            '</dl>' +
+            '<div class="dev-jumps">' +
+            '<button type="button" data-jump="brazil" title="Brasil (1)">1 Brasil</button>' +
+            '<button type="button" data-jump="rio" title="Centro do Rio, zoom 15 (2)">2 Rio z15</button>' +
+            '</div>' +
+            '<div class="dev-colors">' +
+            '<div class="dev-colors-head">' +
+            '<label for="dev-palette">cores</label>' +
+            '<select id="dev-palette" title="Paleta de 5 cores para as raças">' +
+            DEV_PALETTES.map(function (p) {
+                return '<option value="' + p.id + '">' + p.name + '</option>';
+            }).join('') +
+            '</select>' +
+            '</div>' +
+            '<ul class="dev-swatches" id="dev-swatches"></ul>' +
+            '<div class="dev-color-btns">' +
+            '<button type="button" id="dev-permute" title="Roda as mesmas 5 cores: cada raça recebe a próxima">permutar</button>' +
+            '<button type="button" id="dev-shuffle" title="Embaralha as 5 cores desta paleta uma vez">embaralhar</button>' +
+            '<button type="button" id="dev-color-reset" title="Volta à atribuição padrão da paleta">reset</button>' +
+            '</div>' +
+            '<p class="dev-permute-meta" id="dev-permute-meta"></p>' +
+            '</div>';
+
+        document.body.appendChild(toggle);
+        document.body.appendChild(panel);
+        devToggleEl = toggle;
+        devPanelEl = panel;
+
+        let stored = '0';
+        try {
+            stored = sessionStorage.getItem(DEV_PANEL_STORAGE) || '0';
+            const storedMult = parseFloat(sessionStorage.getItem(DEV_RADIUS_STORAGE));
+            if (Number.isFinite(storedMult)) radiusMultiplier = storedMult;
+            const storedPalette = sessionStorage.getItem(DEV_PALETTE_STORAGE);
+            if (storedPalette && paletteById(storedPalette).id === storedPalette) {
+                devPaletteId = storedPalette;
+            }
+            const storedShift = parseInt(sessionStorage.getItem(DEV_PERMUTE_STORAGE), 10);
+            if (Number.isFinite(storedShift)) {
+                devPermuteShift = ((storedShift % 5) + 5) % 5;
+            }
+            const huesRaw = sessionStorage.getItem(DEV_HUES_STORAGE);
+            if (huesRaw) {
+                const parsed = JSON.parse(huesRaw);
+                if (Array.isArray(parsed) && parsed.length === 5 &&
+                    parsed.every(function (h) { return /^#[0-9a-fA-F]{6}$/.test(h); })) {
+                    devWorkingHues = parsed;
+                } else {
+                    devWorkingHues = paletteById(devPaletteId).colors.slice();
+                }
+            } else {
+                devWorkingHues = paletteById(devPaletteId).colors.slice();
+            }
+        } catch (e) { /* private mode */ }
+        applyRadiusMultiplier(radiusMultiplier);
+        applyDevPalette();
+        setDevPanelOpen(stored === '1');
+
+        toggle.addEventListener('click', function () {
+            setDevPanelOpen(devPanelEl.hidden);
+        });
+
+        function clampZoom(z) {
+            return Math.min(15, Math.max(2, Number(z)));
+        }
+
+        function setMapZoom(z) {
+            if (!Number.isFinite(z)) return;
+            map.setZoom(clampZoom(z));
+        }
+
+        document.getElementById('dev-zoom-slider').addEventListener('input', function (e) {
+            setMapZoom(parseFloat(e.target.value));
+        });
+        document.getElementById('dev-zoom-num').addEventListener('change', function (e) {
+            setMapZoom(parseFloat(e.target.value));
+        });
+        document.getElementById('dev-radius-slider').addEventListener('input', function (e) {
+            applyRadiusMultiplier(parseFloat(e.target.value));
+            refreshDevPanel();
+        });
+        document.getElementById('dev-radius-mult').addEventListener('change', function (e) {
+            applyRadiusMultiplier(parseFloat(e.target.value));
+            refreshDevPanel();
+        });
+        document.getElementById('dev-radius-reset').addEventListener('click', function () {
+            applyRadiusMultiplier(1);
+            refreshDevPanel();
+        });
+
+        document.getElementById('dev-palette').addEventListener('change', function (e) {
+            // New palette: drop shuffle/rotation so the listed hues match the preset.
+            devPaletteId = paletteById(e.target.value).id;
+            devWorkingHues = paletteById(devPaletteId).colors.slice();
+            devPermuteShift = 0;
+            persistDevPalette();
+            applyDevPalette();
+        });
+        document.getElementById('dev-permute').addEventListener('click', function () {
+            devPermuteShift = (devPermuteShift + 1) % 5;
+            persistDevPalette();
+            applyDevPalette();
+        });
+        document.getElementById('dev-shuffle').addEventListener('click', function () {
+            const next = paletteById(devPaletteId).colors.slice();
+            for (let i = next.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                const tmp = next[i];
+                next[i] = next[j];
+                next[j] = tmp;
+            }
+            if (next.every(function (c, i) { return c === paletteById(devPaletteId).colors[i]; })) {
+                next.push(next.shift());
+            }
+            devWorkingHues = next;
+            devPermuteShift = 0;
+            persistDevPalette();
+            applyDevPalette();
+        });
+        document.getElementById('dev-color-reset').addEventListener('click', function () {
+            devWorkingHues = paletteById(devPaletteId).colors.slice();
+            devPermuteShift = 0;
+            persistDevPalette();
+            applyDevPalette();
+        });
+
+        function jumpBrazilOverview() {
+            map.fitBounds(BRAZIL_BOUNDS, { padding: 48, duration: 0 });
+        }
+
+        // Old product start; zoom 15 overzooms the z=14 tiles so close-up dots are inspectable.
+        function jumpRioCloseup() {
+            map.jumpTo({ center: [-43.1729, -22.9068], zoom: 15 });
+        }
+
+        panel.addEventListener('click', function (e) {
+            const btn = e.target.closest('[data-jump]');
+            if (!btn) return;
+            if (btn.dataset.jump === 'brazil') jumpBrazilOverview();
+            if (btn.dataset.jump === 'rio') jumpRioCloseup();
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.metaKey || e.ctrlKey || e.altKey) return;
+            if (e.target.closest('input, textarea, select, [contenteditable]')) return;
+            if (e.key === 'd' || e.key === 'D' || e.key === '`') {
+                e.preventDefault();
+                setDevPanelOpen(devPanelEl.hidden);
+                return;
+            }
+            if (e.key === '1') {
+                e.preventDefault();
+                jumpBrazilOverview();
+                return;
+            }
+            if (e.key === '2') {
+                e.preventDefault();
+                jumpRioCloseup();
+            }
+        });
+    }
+
+    initDevPanel();
 
 </script>
 </body>

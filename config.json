@@ -6,6 +6,9 @@
   "data": {
     "censo2022": {
         "mbtiles": "data/tiles/censo2022.mbtiles"
+    },
+    "hover": {
+        "mbtiles": "data/tiles/hover.mbtiles"
     }
   }
 }

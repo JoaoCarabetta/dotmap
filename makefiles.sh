@@ -17,8 +17,10 @@ export NODE_OPTIONS="--max-old-space-size=8192"
 # Define input GeoJSON files for different aggregation levels
 census_tract_geojson="data/censo2022/output/tiles/race/census_tract_${UF}.geojson"
 municipality_geojson="data/censo2022/output/tiles/race/municipality_${UF}.geojson"
-output_directory="dots"
-tiles_directory="tiles"
+# Isolate intermediates per UF so building RR does not clobber RJ dots.
+output_directory="dots/${UF}"
+# Per-UF tiles so a new state never overwrites another UF's MBTiles.
+tiles_directory="tiles/${UF}"
 
 # Never rm -rf tiles/: zooms 7-14 are versioned and expensive to regenerate.
 # Each zoom dir below is overwritten only if that zoom is in this run.
@@ -30,8 +32,8 @@ races=("branca" "preta" "amarela" "parda" "indigena")
 fields=$(IFS=,; echo "${races[*]}")
 echo ">> Fields for Mapshaper: $fields"
 
-# Create tiles directory
-echo ">> Creating tiles directory"
+# Create this UF's tiles directory (leave other UFs untouched)
+echo ">> Creating tiles directory for ${UF}"
 mkdir -p $tiles_directory
 
 # mapshaper is not always on PATH; npx matches how tileserver-gl is invoked.
@@ -109,9 +111,10 @@ for i in "${!min_zoom_levels[@]}"; do
     fi
 done
 
-# Merge all tilesets into a single file
-echo ">> Merging tilesets"
+# Merge every UF × zoom already on disk, not just the UF we just built.
+echo ">> Merging tilesets from all UFs"
 mkdir -p data/tiles
-# tippecanoe's tile-join uses -f (overwrite), not --force
-tile-join -f -o "data/tiles/censo2022.mbtiles" $tiles_directory/*/tiles.mbtiles
+# -f overwrites (tippecanoe has no --force). Default 500KB/tile drops
+# SP+MG overlap at z7 (XYZ 7/47/72, ~508KB) and leaves São Paulo blank.
+tile-join -f --no-tile-size-limit -o "data/tiles/censo2022.mbtiles" tiles/*/*/tiles.mbtiles
 echo ">> Done"

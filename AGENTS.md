@@ -21,41 +21,45 @@ Produto associado ao Escritório de Dados.
 
 ## Comandos locais
 
-Um clone fresco **não** tem `data/`. Os MBTiles por zoom estão em `tiles/`. Junte-os antes de servir (`tile-join` usa `-f`, não `--force`):
+Um clone fresco **não** tem `data/`. Os MBTiles por zoom estão em `tiles/`. Junte-os antes de servir (`tile-join` usa `-f`, não `--force`; `--no-tile-size-limit` evita dropar o tile SP+MG de z7, ~508 KB vs limite padrão de 500 KB):
 
 ```sh
 mkdir -p data/tiles
-tile-join -f -o data/tiles/censo2022.mbtiles tiles/*/tiles.mbtiles
+tile-join -f --no-tile-size-limit -o data/tiles/censo2022.mbtiles tiles/*/*/tiles.mbtiles
 npx --yes tileserver-gl -c config.json -V
 uv run python -m http.server 8001
 ```
 
 A página fica em `http://localhost:8001` (use 8000 se a porta estiver livre). Os tiles vêm de `http://localhost:8080/data/censo2022/{z}/{x}/{y}.pbf`.
 
-Sem restaurar arquivos extras: pontos funcionam; hover (`municipality.geojson` / `census_tract.geojson`) dá 404. Detalhes em `docs/local-setup.md`.
+Sem restaurar arquivos extras: pontos funcionam; hover (`data/tiles/hover.mbtiles`) dá 404 até `python3 scripts/ibge_uf.py tiles`. Detalhes em `docs/local-setup.md`.
 
 Público: https://carabetta.xyz/dataviz/brazildots/ (repo `carabetta.xyz`, tileserver-gl-light no Docker, nginx faz proxy).
 
-Não rode `./makefiles.sh` só para visualizar: exige UF (`./makefiles.sh RJ`), precisa de GeoJSON que não está no git, e um run completo regenera 7–14 (caro). Para só 3–6: `./makefiles.sh RJ 3,4,5,6` (não apaga os outros zooms).
+Não rode `./makefiles.sh` só para visualizar: exige UF (`./makefiles.sh RR`), precisa de GeoJSON que não está no git, e um run completo regenera 7–14 daquela UF (caro). Tiles de outras UFs não são apagados. Para só 3–6: `./makefiles.sh RR 3,4,5,6`.
 
-Dataset do zero (BigQuery / notebook + `./makefiles.sh RJ`): ver `README.md`.
+Dataset do zero (CSV nacional + `python3 scripts/build_municipality.py UF` + `python3 scripts/build_census_tract.py UF` + `./makefiles.sh UF`): ver `README.md`.
 
 Alternativa ao http.server: `uv run python server.py` (Flask + CORS, porta 8000).
 
 ## Mapa de arquivos
 
-- `index.html` — UI, estilo, dois cards flutuantes, rodapé fino, busca, legenda clicável, detalhes de hover e **toda** a lógica do mapa (sources, layers, hover, filtros). Mapa full-bleed (`#map` 100vw/100vh); não há header em barra nem rail esquerdo. **Card de intro** (`.chrome-stack` / `.intro-card`, top-left ~14px): título, explainer, divisor e busca (`mapbox-gl-geocoder` v5, cidade/bairro/CEP/endereço, `countries: br` + bbox RJ, sem pin; CEP de 8 dígitos via BrasilAPI). **Card de legenda** (`.detail-card`, ~268px) fica **canto inferior esquerdo** (`position: fixed; left: 14px`), acima do rodapé slim, com cinco linhas de raça (toggle + solo; multi-select; sem chip/dropdown) e `1 ponto = N pessoas`. Os números do município/setor ficam no **tooltip do mapa** (popup), não no card. Não inventar chips de outras camadas. Título do produto (`h1` e `<title>`): **Onde o Brasil mora**. Explainer: **Cada ponto é um grupo de pessoas. A cor é a raça declarada no Censo Demográfico 2022 (IBGE). O número de pessoas por ponto muda com o zoom.** (outras views reescrevem a explicação, não o h1). **Rodapé slim** (~32px, não a barra antiga de 60px): créditos **Carabetta.xyz** (`© 2026`), não Escritório de Dados. “Dados: IBGE” aponta para o FTP dos Agregados por Setores 2022; “Censo Demográfico 2022” aponta para o dataset Censo 2022 na Base dos Dados (`https://basedosdados.org/dataset/08a1546e-251f-4546-9fe0-b1e6ab2b203d`); GitHub aponta para `https://github.com/JoaoCarabetta/dotmap`. Zoom `+/-` fica no canto inferior direito, logo acima do rodapé.
+- `index.html` — UI, estilo, dois cards flutuantes, rodapé fino, busca, legenda clicável, detalhes de hover e **toda** a lógica do mapa (sources, layers, hover, filtros). Painel **dev** só em loopback (`localhost` / `127.0.0.1` / `::1` / `*.localhost`): botão no canto superior direito ou `D` / `` ` ``, `sessionStorage` `dotmap-dev-panel`; mostra pessoas/ponto, centro, bbox, hover (corte z10) e **fonte** dos tiles (município z3–6 / setor z7–14); zoom e raio são editáveis (slider; raio é multiplicador 0.5×–3× sobre a curva, `reset` volta a 1, `sessionStorage` `dotmap-dev-radius-mult`); **cores** para testar paletas (Atual / Dark2 / Set1 / Okabe–Ito / Print / Terra) com **permutar** (roda as mesmas 5 cores entre as raças), **embaralhar** e **reset**, `sessionStorage` `dotmap-dev-palette` + `dotmap-dev-permute` + `dotmap-dev-hues`; aplica `circle-color` e os swatches da legenda; atalhos `1` Brasil e `2` Rio @ zoom 15. Não aparece em `carabetta.xyz`. Mapa full-bleed (`#map` 100vw/100vh); não há header em barra nem rail esquerdo. **Card de intro** (`.chrome-stack` / `.intro-card`, top-left ~14px): título, explainer, divisor e busca (`mapbox-gl-geocoder` v5, cidade/bairro/CEP/endereço, `countries: br` + bbox RJ, sem pin; CEP de 8 dígitos via BrasilAPI). **Card de legenda** (`.detail-card`, ~268px) fica **canto inferior esquerdo** (`position: fixed; left: 14px`), acima do rodapé slim, com cinco linhas de raça (toggle + solo; multi-select; sem chip/dropdown) e `1 ponto = N pessoas`. Os números do município/setor ficam no **tooltip do mapa** (popup), não no card. Não inventar chips de outras camadas. Título do produto (`h1` e `<title>`): **Onde o Brasil mora**. Explainer: **Cada ponto é um grupo de pessoas. A cor é a raça declarada no Censo Demográfico 2022 (IBGE). O número de pessoas por ponto muda com o zoom.** (outras views reescrevem a explicação, não o h1). **Rodapé slim** (~32px, não a barra antiga de 60px): créditos **Carabetta.xyz** (`© 2026`), não Escritório de Dados. “Dados: IBGE” aponta para o FTP dos Agregados por Setores 2022; “Censo Demográfico 2022” aponta para o dataset Censo 2022 na Base dos Dados (`https://basedosdados.org/dataset/08a1546e-251f-4546-9fe0-b1e6ab2b203d`); GitHub aponta para `https://github.com/JoaoCarabetta/dotmap`. Zoom `+/-` fica no canto inferior direito, logo acima do rodapé.
 - `js/map.js` e `js/events.js` — arquivos vazios; não assumir que a lógica mora aí.
-- `config.json` — fonte `censo2022` apontando para `data/tiles/censo2022.mbtiles`.
-- `makefiles.sh` — gera GeoJSON de pontos por zoom e junta em um único MBTiles. Aceita `./makefiles.sh RJ 3,4,5,6` para rebuild parcial (não apaga `tiles/`).
-- `scripts/build_municipality_rj.py` — agrega o CSV nacional + malha IBGE via mapshaper e escreve `municipality_RJ.geojson` (stdlib; sem geopandas).
+- `config.json` — fontes `censo2022` (pontos) e `hover` (município/setor) em `data/tiles/`.
+- `makefiles.sh` — gera pontos e MBTiles em `tiles/{UF}/zoomN-N/` e junta **todas** as UFs em `data/tiles/censo2022.mbtiles`. Aceita `./makefiles.sh RR 3,4,5,6` para rebuild parcial daquela UF.
+- `scripts/build_municipality.py` — CSV nacional + malha municipal IBGE → `municipality_{UF}.geojson` (stdlib; sem geopandas).
+- `scripts/build_census_tract.py` — CSV nacional + malha de setor IBGE por UF → `census_tract_{UF}.geojson`.
+- `scripts/ibge_uf.py` — códigos IBGE, download, merge do hover concatenado e `tiles` (MBTiles de hover).
+- `scripts/build_municipality_rj.py` — wrapper que chama `build_municipality.py RJ`.
 - `notebooks/treat_2022.ipynb` — cruza microdados do censo com geometria de setores.
-- `docs/docs.md` — zoom, densidade, schema demográfico, filtro na legenda, basemap, chrome (intro top-left, legenda canto inferior esquerdo, rodapé slim; sem rail).
+- `docs/docs.md` — zoom, densidade, schema demográfico, filtro na legenda, basemap, chrome (intro top-left, legenda canto inferior esquerdo, rodapé slim; sem rail), painel dev localhost-only.
 - `docs/fontes.md` — URLs e caveats dos arquivos brutos do IBGE (raça nacional já baixada).
 - `docs/local-setup.md` — como juntar os tiles versionados e servir o mapa.
 - `docs/structure.md` — árvore do repositório.
 - `debugger.html` — visualizador OpenLayers para inspecionar PBF local.
-- `data/` — gitignored. GeoJSON e MBTiles não entram no git.
+- `tiles/` — MBTiles versionados por UF (`tiles/{UF}/zoomN-N/tiles.mbtiles`). Cobertura atual: todas as 27 UFs (AC–TO, inclusive MG e SP).
+- `data/` — gitignored. GeoJSON e MBTiles mesclados não entram no git.
 - `dots/`, `output/` — intermediários do pipeline; também gitignored.
 
 ## Dados e camadas do mapa
@@ -66,27 +70,27 @@ Cores atuais dos pontos:
 
 | Categoria | Cor |
 |---|---|
-| branca | `#fb3640` |
-| preta | `#fff07c` |
-| amarela | `#89ffa7` |
-| parda | `#3899c9` |
-| indigena | `#e8800c` |
+| branca | `#4daf4a` |
+| preta | `#ff7f00` |
+| amarela | `#377eb8` |
+| parda | `#e41a1c` |
+| indigena | `#984ea3` |
 
 Sources no mapa:
 
 - `points` — vector tiles (`source-layer: points`), atributo `race`.
-- `setores` — GeoJSON concatenado `data/censo2022/output/tiles/race/census_tract.geojson` (simplificado no merge; hover a partir do zoom 10). Não escala até SP.
-- `municipios` — GeoJSON concatenado `data/censo2022/output/tiles/race/municipality.geojson`. Hover abaixo do zoom 10.
+- `setores` — vector tiles `hover` (`source-layer: setores`), zoom 10–12 (overzoom até 14). O GeoJSON nacional não entra no browser (trava no zoom alto).
+- `municipios` — vector tiles `hover` (`source-layer: municipios`), zoom 3–9.
 
 Atributos esperados nos GeoJSON de polígonos: `populacao`, `branca`, `preta`, `amarela`, `parda`, `indigena`; municípios também têm `municipio`, `id_municipio`, `sigla_uf`.
 
-Basemap: `mapbox://styles/mapbox/dark-v10`. Contornos de hover de setor/município usam `white` para ficar visíveis no fundo escuro. Cores dos pontos não mudam.
+Basemap: `mapbox://styles/mapbox/light-v10` (não dark-v10, não um estilo vazio). Depois do load, todas as layers `symbol` ficam `visibility: none` (sem nomes de cidade/rua/POI); fill/line/background do basemap ficam. Contornos de hover de setor/município usam `#202124` para ficar visíveis no fundo claro; o fill correspondente ganha um tint `#202124` a 8% só no hover. Cores dos pontos são ColorBrewer Set1 permutadas (HUD test; contraste no light-v10): `branca` `#4daf4a`, `preta` `#ff7f00`, `amarela` `#377eb8`, `parda` `#e41a1c`, `indigena` `#984ea3`. HUD **Atual** / reset usa as mesmas; produção não carrega o HUD.
 
-Zoom do mapa: `minzoom` 2 no construtor (o Mapbox trata o mínimo como exclusivo, `zoom > min`, para o usuário alcançar o 3), max 14, centro inicial no Rio (`[-43.1729, -22.9068]`), zoom inicial 7. A source `points` declara `minzoom: 3` para não pedir PBF de z=2. Scroll zoom está desligado; navegação pelo `NavigationControl` no canto inferior direito (`+/-`).
+Zoom do mapa: `minZoom` 2 no construtor (o Mapbox trata o mínimo como exclusivo, `zoom > min`, para o usuário alcançar o 3), `maxZoom` 15 (atalho local Rio; tiles PBF param em 14). A câmera inicial é o Brasil inteiro: fallback `center [-51.9, -14.2]` / zoom 3.5 e, no `load`, `fitBounds` `[[-74, -34], [-32, 6]]`. A source `points` declara `minzoom: 3` / `maxzoom: 14`. Scroll zoom está desligado; navegação pelo `NavigationControl` no canto inferior direito (`+/-`). Painel dev local: `1` Brasil, `2` Rio @ 15.
 
-A escala da legenda (`1 ponto = N pessoas`) em `index.html` **bate com o pipeline em 3–6** (24000 / 12000 / 6000 / 3000) e **não bate em 7–14**. Ao mudar densidade, atualize `makefiles.sh`, a legenda e `docs/docs.md`.
+A escala da legenda (`1 ponto = N pessoas`) em `index.html` **bate com** `makefiles.sh` em 3–14 (24000 / 12000 / 6000 / 3000 / 150 / 120 / 90 / 70 / 50 / 35 / 25 / 20). Zoom 15 da câmera usa o N do z14 (20). Ao mudar densidade, atualize `makefiles.sh`, a legenda (`peoplePerDot`) e `docs/docs.md` juntos.
 
-`per_dot` atual no pipeline (`makefiles.sh`): zoom 3→24000 (city), 4→12000 (city), 5→6000 (city), 6→3000 (city), 7→150, 8→120, 9→90, 10→70, 11→50, 12→35, 13→25, 14→20 (census).
+Tiles gerados em `makefiles.sh` (não o hover): **município** (`city` / `municipality_*.geojson`) nos zooms **3–6** (`per_dot` 24000 / 12000 / 6000 / 3000); **setor censitário** (`census` / `census_tract_*.geojson`) nos zooms **7–14** (`per_dot` 150 / 120 / 90 / 70 / 50 / 35 / 25 / 20). Zoom 15 da câmera só faz overzoom do z=14. Tabela completa em [`docs/docs.md`](docs/docs.md). Hover no mapa é outro corte (município < 10, setor ≥ 10).
 
 ## Convenções
 
@@ -102,5 +106,5 @@ A escala da legenda (`1 ponto = N pessoas`) em `index.html` **bate com o pipelin
 
 - Não apagar `tiles/` ou `data/tiles/*.mbtiles` sem confirmação: regenerar é caro.
 - Não tratar `docs/docs.md` e `TODO` como source of truth da densidade — o código em `makefiles.sh` e `index.html` é o que roda.
-- Não assumir cobertura nacional no frontend: paths e centro estão no recorte RJ. A busca restringe resultados ao bbox do RJ.
+- Pontos cobrem as 27 UFs. A busca ainda restringe resultados ao bbox do RJ. Hover no browser é `data/tiles/hover.mbtiles`, não o GeoJSON concatenado.
 - Não inventar novas categorias raciais além das cinco do IBGE usadas aqui.
