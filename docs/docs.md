@@ -103,3 +103,7 @@ The legend provides two ways to control the visibility of racial categories:
 - Maintains a Set of active races for efficient filtering
 - Separate click handlers for toggle and solo modes
 - Updates are applied immediately to the map visualization
+
+# Footer
+
+The footer credits IBGE / Censo 2022 on the left. On the right: GitHub, a link to [Carabetta.xyz](https://carabetta.xyz), and `© 2026 Carabetta.xyz`.

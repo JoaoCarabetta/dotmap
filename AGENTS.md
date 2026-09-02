@@ -44,7 +44,7 @@ Alternativa ao http.server: `uv run python server.py` (Flask + CORS, porta 8000)
 
 ## Mapa de arquivos
 
-- `index.html` — UI, estilo, header/footer, legenda, tooltip e **toda** a lógica do mapa (sources, layers, hover, filtros).
+- `index.html` — UI, estilo, header/footer, legenda, tooltip e **toda** a lógica do mapa (sources, layers, hover, filtros). O rodapé credita **Carabetta.xyz** (`© 2026`), não Escritório de Dados.
 - `js/map.js` e `js/events.js` — arquivos vazios; não assumir que a lógica mora aí.
 - `config.json` — fonte `censo2022` apontando para `data/tiles/censo2022.mbtiles`.
 - `makefiles.sh` — gera GeoJSON de pontos por zoom e junta em um único MBTiles. Aceita `./makefiles.sh RJ 3,4,5,6` para rebuild parcial (não apaga `tiles/`).
