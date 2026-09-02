@@ -1,12 +1,15 @@
 #!/bin/bash
 # Check if UF argument is provided
 if [ $# -eq 0 ]; then
-    echo "Usage: $0 <UF>"
-    echo "Example: $0 AC"
+    echo "Usage: $0 <UF> [zooms]"
+    echo "Example: $0 RJ"
+    echo "Example: $0 RJ 3,4,5,6"
     exit 1
 fi
 
 UF=$1
+# Optional comma-separated zoom list so we can rebuild 3-6 without touching 7-14.
+ONLY_ZOOMS="${2:-}"
 
 # Increase Node.js memory limit
 export NODE_OPTIONS="--max-old-space-size=8192"
@@ -17,9 +20,8 @@ municipality_geojson="data/censo2022/output/tiles/race/municipality_${UF}.geojso
 output_directory="dots"
 tiles_directory="tiles"
 
-# Remove the existing tiles directory if it exists
-echo ">> Removing existing tiles directory if it exists"
-rm -rf $tiles_directory
+# Never rm -rf tiles/: zooms 7-14 are versioned and expensive to regenerate.
+# Each zoom dir below is overwritten only if that zoom is in this run.
 
 # Define races
 races=("branca" "preta" "amarela" "parda" "indigena")
@@ -32,13 +34,19 @@ echo ">> Fields for Mapshaper: $fields"
 echo ">> Creating tiles directory"
 mkdir -p $tiles_directory
 
-# Define zoom level ranges and corresponding per-dot values based on reference table
-# Format: zoom levels, dots per person, and aggregation level
-min_zoom_levels=(7  8  9  10 11 12 13 14)
-max_zoom_levels=(7  8  9  10 11 12 13 14)
-per_dot_values=(150 120 90 70 50 35 25 20)
-# Census tract level: zoom 7-14
-aggregation_levels=("census" "census" "census" "census" "census" "census" "census" "census")
+# mapshaper is not always on PATH; npx matches how tileserver-gl is invoked.
+if command -v mapshaper >/dev/null 2>&1; then
+    MAPSHAPER=(mapshaper)
+else
+    MAPSHAPER=(npx --yes mapshaper)
+fi
+
+# Zoom 3-6 = municipality (city); 7-14 = census tract.
+# per_dot doubles each step out from 4 so continental views stay a cluster, not a blob.
+min_zoom_levels=(3     4     5    6    7   8   9   10  11  12  13  14)
+max_zoom_levels=(3     4     5    6    7   8   9   10  11  12  13  14)
+per_dot_values=(24000 12000 6000 3000 150 120 90  70  50  35  25  20)
+aggregation_levels=("city" "city" "city" "city" "census" "census" "census" "census" "census" "census" "census" "census")
 
 # Loop through zoom level ranges
 echo ">> Generating dot density files and tilesets"
@@ -47,6 +55,14 @@ for i in "${!min_zoom_levels[@]}"; do
     max_zoom=${max_zoom_levels[$i]}
     per_dot=${per_dot_values[$i]}
     aggregation=${aggregation_levels[$i]}
+
+    if [ -n "$ONLY_ZOOMS" ]; then
+        case ",$ONLY_ZOOMS," in
+            *",$min_zoom,"*) ;;
+            *) continue ;;
+        esac
+    fi
+
     output_geojson="${output_directory}/zoom${min_zoom}-${max_zoom}/points.geojson"
 
     echo ">> Processing zoom levels: $min_zoom to $max_zoom with per-dot value: $per_dot (${aggregation} level)"
@@ -62,9 +78,14 @@ for i in "${!min_zoom_levels[@]}"; do
         input_geojson=$census_tract_geojson
     fi
 
+    if [ ! -f "$input_geojson" ]; then
+        echo "Error: missing input $input_geojson"
+        exit 1
+    fi
+
     # Generate dot density file for the zoom level range with race data
     echo ">> Running mapshaper for zoom levels $min_zoom to $max_zoom using ${aggregation} data"
-    mapshaper $input_geojson -dots fields=$fields values=$fields \
+    "${MAPSHAPER[@]}" $input_geojson -dots fields=$fields values=$fields \
     save-as=race per-dot=$per_dot evenness=0.5 -o $output_geojson 
 
     # Check for errors
@@ -90,6 +111,7 @@ done
 
 # Merge all tilesets into a single file
 echo ">> Merging tilesets"
-mkdir -p output
-tile-join -o "data/tiles/censo2022.mbtiles" $tiles_directory/*/tiles.mbtiles --force
+mkdir -p data/tiles
+# tippecanoe's tile-join uses -f (overwrite), not --force
+tile-join -f -o "data/tiles/censo2022.mbtiles" $tiles_directory/*/tiles.mbtiles
 echo ">> Done"
