@@ -31,17 +31,18 @@ If 8000 is free you can use `uv run python -m http.server` instead (default 8000
 
 Without restoring extra files from elsewhere:
 
-- **Works:** basemap + colored race dots (zooms 7–14)
+- **Works:** basemap + colored race dots (zooms 3–14; 3–6 are municipality-level, RJ only)
 - **404:** hover GeoJSON (`data/censo2022/output/tiles/race/*_RJ.geojson`) and `assets/logo.png`
 
 ## Create the dataset from scratch
 
-Only if you have the BigQuery project / raw census files. Do not run this just to view the map: `makefiles.sh` deletes `tiles/` and requires GeoJSON that is not in git.
+Only if you have the BigQuery project / raw census files. Do not run this just to view the map: a full `./makefiles.sh RJ` regenerates zooms 7–14 (expensive) and needs GeoJSON that is not in git.
 
 1. Run the notebook https://console.cloud.google.com/bigquery?ws=!1m7!1m6!12m5!1m3!1srj-escritorio-dev!2ssouthamerica-east1!3s371e01b4-ccd6-429a-b0ef-c73c384a1dd7!2e2 (or `notebooks/treat_2022.ipynb`).
-2. Download / write GeoJSON under `data/censo2022/output/tiles/race/`.
+2. Download / write GeoJSON under `data/censo2022/output/tiles/race/`. For municipality dots only: `python3 scripts/build_municipality_rj.py`.
 3. Build dots and tiles for one UF (argument is required):
 
 ```sh
-./makefiles.sh RJ
+./makefiles.sh RJ            # all zooms 3–14
+./makefiles.sh RJ 3,4,5,6    # municipal zooms only; leaves 7–14 alone
 ```

@@ -1,13 +1,13 @@
 # Local setup
 
-How to run the map on this machine. Verified 2026-09-01 with the MBTiles already in `tiles/`.
+How to run the map on this machine. Verified 2026-09-02 with municipal zooms 3–6 in `tiles/` and map `minzoom` 2 (Mapbox treats the floor as exclusive).
 
 ## What git gives you vs what it does not
 
 In the repo:
 
 - `index.html` (map UI)
-- `tiles/zoom7-7` … `tiles/zoom14-14` (per-zoom MBTiles, RJ)
+- `tiles/zoom3-3` … `tiles/zoom14-14` (per-zoom MBTiles, RJ; 3–6 are municipality dots)
 - `config.json` (expects a merged file at `data/tiles/censo2022.mbtiles`)
 
 Not in git (`data/` and `assets/` are missing on a fresh clone):
@@ -28,7 +28,7 @@ Not in git (`data/` and `assets/` are missing on a fresh clone):
 
 `mapshaper` is only needed to **regenerate** dots via `makefiles.sh`, not to serve existing tiles.
 
-Do **not** run `./makefiles.sh` just to view the map. The script requires a UF argument (`./makefiles.sh RJ`), deletes `tiles/`, and needs GeoJSON under `data/` that is not in git.
+Do **not** run `./makefiles.sh` just to view the map. The script requires a UF argument (`./makefiles.sh RJ`) and needs GeoJSON under `data/` that is not in git. A full run regenerates every zoom including 7–14 (expensive). To rebuild only the municipal zooms: `./makefiles.sh RJ 3,4,5,6`. The script no longer deletes the whole `tiles/` tree.
 
 ## Serve existing tiles (reproduced path)
 
@@ -50,9 +50,9 @@ Open `http://localhost:8001`. Tiles are requested from `http://localhost:8080/da
 
 Sanity checks used in the reproduction:
 
-- `GET /data/censo2022.json` → `minzoom` 7, `maxzoom` 14, layer `points`, field `race`
-- Sample PBF at zoom 7 (`7/48/72.pbf`) returns 200
-- A real browser over the RJ center requested zooms 7–12 and received 200s
+- `GET /data/censo2022.json` → `minzoom` 3, `maxzoom` 14, layer `points`, field `race`
+- Sample PBF at zoom 3 (`3/3/4.pbf`), zoom 4 (`4/6/9.pbf`) and zoom 7 (`7/48/72.pbf`) return 200
+- A real browser over the RJ center requested zooms 3–12 and received 200s
 - `census_tract_RJ.geojson`, `municipality_RJ.geojson`, and `assets/logo.png` return 404 until those files are restored
 
 ## Public URL
@@ -64,11 +64,12 @@ The map is published at [https://carabetta.xyz/dataviz/brazildots/](https://cara
 Needs GCP access to `rj-escritorio-dev` and raw files that live only under `data/`.
 
 1. Run the BigQuery notebook linked from [README.md](../README.md).
-2. Or run [notebooks/treat_2022.ipynb](../notebooks/treat_2022.ipynb) against `data/censo2022/raw/censo.csv` + `setores.gpkg`. It writes `census_tract_RJ.geojson` and `municipality_RJ.geojson`.
-3. Generate dots and MBTiles (this **wipes** `tiles/`):
+2. Or run [notebooks/treat_2022.ipynb](../notebooks/treat_2022.ipynb) against `data/censo2022/raw/censo.csv` + `setores.gpkg` for census-tract GeoJSON. For municipality dots (zooms 3–6), run `python3 scripts/build_municipality_rj.py` against the national race CSV + IBGE malha — see [fontes.md](fontes.md).
+3. Generate dots and MBTiles. A full run regenerates 7–14 (expensive). Partial rebuild does not delete other zooms:
 
 ```sh
-./makefiles.sh RJ
+./makefiles.sh RJ            # all zooms 3–14
+./makefiles.sh RJ 3,4,5,6    # municipal zooms only
 ```
 
 4. Then serve as in the section above. `makefiles.sh` already writes `data/tiles/censo2022.mbtiles`.

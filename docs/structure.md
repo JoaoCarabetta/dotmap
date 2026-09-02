@@ -15,10 +15,13 @@ dotmap/
 ├── js/
 │   ├── map.js                # Empty placeholder (logic lives in index.html)
 │   └── events.js             # Empty placeholder
+├── scripts/
+│   └── build_municipality_rj.py  # National race CSV + IBGE malha → municipality_RJ.geojson
 ├── notebooks/
 │   └── treat_2022.ipynb      # Census + setor geometry → race GeoJSON
 ├── docs/
 │   ├── docs.md               # Zoom, density, data schema, legend behavior
+│   ├── fontes.md             # IBGE download URLs and raw-file caveats
 │   ├── local-setup.md        # How to merge tiles and serve locally
 │   └── structure.md          # This file
 ├── assets/                   # Logo (not in git; header 404s without it)
