@@ -2,39 +2,325 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Your Mapbox App</title>
+    <title>Onde o Brasil mora</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.3/mapbox-gl-geocoder.min.js"></script>
+    <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.3/mapbox-gl-geocoder.css">
     <style>
-        body { margin: 0; padding: 0; }
-        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-        .legend { background: white; padding: 10px; font-family: Arial, sans-serif; position: absolute; bottom: 60px; right: 10px; z-index: 100; border-radius: 3px; min-width: 150px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .legend h4 { margin: 0 0 10px; }
-        .legend div span { border-radius: 50%; width: 10px; height: 10px; display: inline-block; margin-right: 5px; }
-        .legend .dot-scale { font-size: 12px; color: #666; margin: 0 0 10px; border-bottom: 1px solid #eee; padding-bottom: 8px; white-space: nowrap; }
-        .zoom-level-indicator {
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 4px;
-            padding: 10px;
-            margin: 10px;
-            position: absolute;
-            bottom: 60px;
-            left: 10px;
-            font-family: Arial, sans-serif;
-            z-index: 100;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        :root {
+            --rail-width: 64px;
+            --panel-width: 340px;
+            --chrome-gap: 12px;
+            --chrome-anim: 200ms ease;
+            --chrome-font: system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
         }
-/*             
-        .mapboxgl-popup {
-            max-width: 400px;
-            font:
-                12px/20px 'Helvetica Neue',
-                Arial,
-                Helvetica,
-                sans-serif;
-        } */
-        
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* Full-bleed: chrome floats on top so 60px header/footer bars never return. */
+        #map {
+            position: absolute;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Docked strip, not a card — matches the Google Maps left rail. */
+        .rail {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: var(--rail-width);
+            z-index: 130;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            background: #fff;
+            box-shadow: 1px 0 0 #e8eaed, 2px 0 8px rgba(0, 0, 0, 0.06);
+            font-family: var(--chrome-font);
+        }
+
+        .rail-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            width: 100%;
+            min-height: 64px;
+            padding: 10px 4px 8px;
+            border: none;
+            background: transparent;
+            color: #5f6368;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 10px;
+            line-height: 1.2;
+        }
+
+        .rail-btn:hover {
+            background: #f1f3f4;
+        }
+
+        /* Blue fill so the open panel is obvious from the docked icon alone. */
+        body.chrome-expanded #rail-toggle {
+            background: #e8f0fe;
+            color: #1a73e8;
+        }
+
+        .rail-btn svg {
+            display: block;
+            width: 22px;
+            height: 22px;
+            fill: currentColor;
+        }
+
+        .rail-label {
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Slides out from behind the rail so the strip itself never grows. */
+        .info-panel {
+            position: fixed;
+            top: 0;
+            left: var(--rail-width);
+            width: var(--panel-width);
+            height: 100vh;
+            z-index: 120;
+            box-sizing: border-box;
+            padding: 20px 20px 16px;
+            background: #fff;
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.12);
+            font-family: var(--chrome-font);
+            color: #202124;
+            overflow-y: auto;
+            transform: translateX(-100%);
+            transition: transform var(--chrome-anim);
+            pointer-events: none;
+        }
+
+        body.chrome-expanded .info-panel {
+            transform: translateX(0);
+            pointer-events: auto;
+        }
+
+        .info-panel-head {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .info-panel-titles {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .info-panel-title {
+            font-size: 20px;
+            line-height: 1.25;
+            font-weight: 600;
+            margin: 0;
+            color: #202124;
+        }
+
+        .info-panel-subtitle {
+            font-size: 13px;
+            line-height: 1.4;
+            color: #5f6368;
+            margin: 8px 0 0 0;
+        }
+
+        .info-panel-close {
+            flex: 0 0 32px;
+            width: 32px;
+            height: 32px;
+            margin: -4px -4px 0 0;
+            padding: 0;
+            border: none;
+            border-radius: 16px;
+            background: transparent;
+            color: #5f6368;
+            cursor: pointer;
+        }
+
+        .info-panel-close:hover {
+            background: #f1f3f4;
+        }
+
+        .info-panel-close svg {
+            display: block;
+            width: 18px;
+            height: 18px;
+            margin: 7px auto;
+            fill: currentColor;
+        }
+
+        /* Scale lives here because pills are only race filters, not density copy. */
+        .dot-scale {
+            font-size: 13px;
+            color: #5f6368;
+            margin: 16px 0 0;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .info-credits {
+            margin-top: 12px;
+            font-size: 11px;
+            line-height: 1.55;
+            color: #5f6368;
+        }
+
+        .info-credits a {
+            color: #5f6368;
+            text-decoration: none;
+        }
+
+        .info-credits a:hover {
+            color: #202124;
+            text-decoration: underline;
+        }
+
+        .info-credits-row + .info-credits-row {
+            margin-top: 2px;
+        }
+
+        /* Floats next to the rail (or the open panel) — never a full-width header. */
+        .search-chrome {
+            position: fixed;
+            top: var(--chrome-gap);
+            left: calc(var(--rail-width) + var(--chrome-gap));
+            z-index: 115;
+            max-width: calc(100vw - var(--rail-width) - 24px);
+            transition: left var(--chrome-anim);
+        }
+
+        body.chrome-expanded .search-chrome {
+            left: calc(var(--rail-width) + var(--panel-width) + var(--chrome-gap));
+            max-width: calc(100vw - var(--rail-width) - var(--panel-width) - 24px);
+        }
+
+        .search-bar .mapboxgl-ctrl-geocoder {
+            width: 392px;
+            max-width: 100%;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: none;
+            border-radius: 24px;
+            font-family: var(--chrome-font);
+        }
+
+        .search-bar .mapboxgl-ctrl-geocoder--input {
+            height: 48px;
+            padding-left: 44px;
+            font-size: 15px;
+        }
+
+        .search-bar .mapboxgl-ctrl-geocoder--icon-search {
+            top: 13px;
+            left: 14px;
+        }
+
+        /* Suggestions must sit above pills and the zoom control. */
+        .search-bar .suggestions {
+            z-index: 140;
+        }
+
+        .race-pills {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 8px;
+            margin-top: 10px;
+            overflow-x: auto;
+            padding-bottom: 2px;
+            scrollbar-width: none;
+        }
+
+        .race-pills::-webkit-scrollbar {
+            display: none;
+        }
+
+        .race-pill {
+            display: inline-flex;
+            align-items: center;
+            flex: 0 0 auto;
+            height: 36px;
+            padding: 0 4px 0 12px;
+            border: 1px solid #dadce0;
+            border-radius: 18px;
+            background: #fff;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+            transition: opacity 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .race-pill:hover {
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.16);
+        }
+
+        .race-pill.is-off {
+            opacity: 0.35;
+        }
+
+        /* Toggle and solo are sibling buttons so a chip is not a nested <button>. */
+        .race-pill-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            height: 100%;
+            padding: 0;
+            border: none;
+            background: transparent;
+            color: #202124;
+            font-family: var(--chrome-font);
+            font-size: 13px;
+            line-height: 1;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .race-pill-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex: 0 0 10px;
+        }
+
+        .solo-button {
+            visibility: hidden;
+            width: 16px;
+            height: 16px;
+            margin: 0 4px 0 6px;
+            padding: 0;
+            border-radius: 3px;
+            border: 1px solid #ccc;
+            background: #fff;
+            color: #666;
+            font-family: inherit;
+            font-size: 10px;
+            line-height: 14px;
+            cursor: pointer;
+        }
+
+        .race-pill:hover .solo-button,
+        .race-pill:focus-within .solo-button {
+            visibility: visible;
+        }
+
+        .solo-button:hover {
+            background: #f0f0f0;
+            border-color: #999;
+        }
 
         .mapboxgl-popup-content {
             background-color: white;
@@ -50,7 +336,6 @@
         .mapboxgl-popup-tip {
             visibility: hidden;
         }
-
 
         #g-map {
             width: 100%;
@@ -88,141 +373,28 @@
             color: #666;
         }
 
-        .legend-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 2px 5px;
-            opacity: 1;
-            transition: opacity 0.2s ease;
+        /* Logo would sit under the rail if it stayed at the default 0-offset. */
+        .mapboxgl-ctrl-bottom-left {
+            left: calc(var(--rail-width) + 8px);
+            bottom: 16px;
+            transition: left var(--chrome-anim);
         }
 
-        .legend-item.disabled {
-            opacity: 0.3;
+        body.chrome-expanded .mapboxgl-ctrl-bottom-left {
+            left: calc(var(--rail-width) + var(--panel-width) + 8px);
         }
 
-        .legend-label {
-            display: flex;
-            align-items: center;
-            flex-grow: 1;
-            cursor: pointer;
+        .mapboxgl-ctrl-bottom-right {
+            right: 16px;
+            bottom: 16px;
         }
 
-        .solo-button {
-            visibility: hidden;
-            width: 16px;
-            height: 16px;
-            border-radius: 3px;
-            border: 1px solid #ccc;
-            background: white;
-            cursor: pointer;
-            font-size: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-left: 5px;
-            color: #666;
-            transition: all 0.2s ease;
-        }
-
-        .legend-item:hover .solo-button {
-            visibility: visible;
-        }
-
-        .solo-button:hover {
-            background: #f0f0f0;
-            border-color: #999;
-        }
-
-        .legend-dot {
-            transition: opacity 0.2s ease;
-        }
-
-        .header {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 60px;
-            background: rgba(255, 255, 255, 0.9);
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            padding: 0 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .header-logo {
-            height: 40px;
-            margin-right: 20px;
-        }
-
-        .header-text {
-            flex-grow: 1;
-        }
-
-        .header-title {
-            font-size: 20px;
-            font-weight: bold;
-            margin: 0;
-            color: #333;
-            font-family: Arial, sans-serif;
-        }
-
-        .header-subtitle {
-            font-size: 14px;
-            color: #666;
-            margin: 4px 0 0 0;
-            font-family: Arial, sans-serif;
-        }
-
-        .footer {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(255, 255, 255, 0.9);
-            z-index: 100;
-            padding: 10px 20px;
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
-        }
-
-        .footer-section {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .footer a {
-            color: #666;
-            text-decoration: none;
-            transition: color 0.2s ease;
-        }
-
-        .footer a:hover {
-            color: #333;
-        }
-
-        /* Adjust zoom indicator to account for footer */
-        .zoom-level-indicator {
-            bottom: 60px;
-        }
-
-        /* Position zoom controls below header */
-        .mapboxgl-ctrl-top-right {
-            top: 70px !important; /* Header height (60px) + 10px margin */
-        }
-
-        /* Optional: style the zoom controls to match the theme */
         .mapboxgl-ctrl-group {
-            background: rgba(255, 255, 255, 0.9) !important;
+            background: #fff !important;
             border: none !important;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28) !important;
+            overflow: hidden;
         }
 
         .mapboxgl-ctrl-group button {
@@ -232,57 +404,126 @@
         .mapboxgl-ctrl-group button:last-child {
             border-bottom: none !important;
         }
+
+        /* Phone: keep the rail, overlay the panel, leave search next to the strip. */
+        @media (max-width: 520px) {
+            :root {
+                --rail-width: 56px;
+            }
+
+            .rail-btn {
+                min-height: 56px;
+            }
+
+            .info-panel {
+                height: auto;
+                max-height: 50vh;
+                width: min(var(--panel-width), calc(100vw - var(--rail-width)));
+                border-radius: 0 0 12px 0;
+            }
+
+            /* Overlay, do not shove search off a ~390px screen. */
+            body.chrome-expanded .search-chrome {
+                left: calc(var(--rail-width) + var(--chrome-gap));
+                max-width: calc(100vw - var(--rail-width) - 24px);
+            }
+
+            body.chrome-expanded .mapboxgl-ctrl-bottom-left {
+                left: calc(var(--rail-width) + 8px);
+            }
+
+            /* Touch has no hover; solo would be unreachable if it stayed hidden. */
+            .solo-button {
+                visibility: visible;
+            }
+        }
     </style>
 </head>
 <body>
-    <header class="header">
-        <img src="assets/logo.png" alt="Logo" class="header-logo">
-        <div class="header-text">
-            <h1 class="header-title">Distribuição Racial no Brasil</h1>
-            <p class="header-subtitle">Censo Demográfico 2022 • IBGE</p>
-        </div>
-    </header>
 <div id="map"></div>
-<div class="legend" id="legend">
-    <h4>Raça</h4>
-    <div class="dot-scale" id="dot-scale">1 ponto = 2.000 pessoas</div>
-    <div class="legend-item" data-race="branca">
-        <div class="legend-label">
-            <span class="legend-dot" style="background-color: #fb3640;"></span>
-            <span>Branca</span>
+<!-- Docked rail + sliding panel + floating search: Google Maps chrome, not a card. -->
+<nav class="rail" id="rail" aria-label="Navegação do mapa">
+    <button type="button" class="rail-btn" id="rail-toggle" aria-expanded="false" aria-controls="info-panel" aria-label="Mostrar informações do projeto">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/>
+        </svg>
+        <span class="rail-label">Info</span>
+    </button>
+    <!-- Same panel: a second icon so the rail is a stack, not a single mystery button. -->
+    <button type="button" class="rail-btn" id="rail-layers" aria-label="Abrir informações do mapa">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2L2 7.5 12 13l10-5.5L12 2zm0 8.5L4.2 7.5 12 3.3l7.8 4.2L12 10.5zM2 12.2l10 5.5 10-5.5-2-1.1-8 4.4-8-4.4-2 1.1zm0 4.3l10 5.5 10-5.5-2-1.1-8 4.4-8-4.4-2 1.1z"/>
+        </svg>
+        <span class="rail-label">Camadas</span>
+    </button>
+</nav>
+<aside class="info-panel" id="info-panel" aria-label="Sobre o mapa" inert>
+    <div class="info-panel-head">
+        <div class="info-panel-titles">
+            <!-- Product-level title; subtitle explains the viz for first-time visitors. -->
+            <h1 class="info-panel-title">Onde o Brasil mora</h1>
+            <p class="info-panel-subtitle">Cada ponto é um grupo de pessoas. A cor é a raça no Censo 2022.</p>
         </div>
-        <button class="solo-button" title="Show only this category">S</button>
+        <button type="button" class="info-panel-close" id="info-panel-close" aria-label="Fechar informações">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+        </button>
     </div>
-    <div class="legend-item" data-race="preta">
-        <div class="legend-label">
-            <span class="legend-dot" style="background-color: #fff07c;"></span>
-            <span>Preta</span>
+    <p class="dot-scale" id="dot-scale">1 ponto = 2.000 pessoas</p>
+    <div class="info-credits">
+        <div class="info-credits-row">
+            Dados: <a href="https://ftp.ibge.gov.br/Censos/Censo_Demografico_2022/Agregados_por_Setores_Censitarios/" target="_blank" rel="noopener noreferrer">IBGE</a>
+            · <a href="https://basedosdados.org/dataset/08a1546e-251f-4546-9fe0-b1e6ab2b203d" target="_blank" rel="noopener noreferrer">Censo Demográfico 2022</a>
         </div>
-        <button class="solo-button" title="Show only this category">S</button>
+        <div class="info-credits-row">
+            <a href="https://github.com/JoaoCarabetta/dotmap" target="_blank" rel="noopener noreferrer">GitHub</a>
+            · <a href="https://carabetta.xyz" target="_blank" rel="noopener noreferrer">Carabetta.xyz</a>
+            · © 2026 Carabetta.xyz
+        </div>
     </div>
-    <div class="legend-item" data-race="amarela">
-        <div class="legend-label">
-            <span class="legend-dot" style="background-color: #89ffa7;"></span>
-            <span>Amarela</span>
+</aside>
+<div class="search-chrome" id="search-chrome">
+    <div class="search-bar" id="search-slot"></div>
+    <!-- Pills are the only race-filter surface so the panel does not duplicate the legend. -->
+    <div class="race-pills" id="race-pills" role="toolbar" aria-label="Filtrar por raça">
+        <div class="race-pill" data-race="branca">
+            <button type="button" class="race-pill-toggle" aria-pressed="true">
+                <span class="race-pill-dot" style="background-color: #fb3640;"></span>
+                Branca
+            </button>
+            <button type="button" class="solo-button" title="Mostrar só esta categoria">S</button>
         </div>
-        <button class="solo-button" title="Show only this category">S</button>
-    </div>
-    <div class="legend-item" data-race="parda">
-        <div class="legend-label">
-            <span class="legend-dot" style="background-color: #3899c9;"></span>
-            <span>Parda</span>
+        <div class="race-pill" data-race="preta">
+            <button type="button" class="race-pill-toggle" aria-pressed="true">
+                <span class="race-pill-dot" style="background-color: #fff07c;"></span>
+                Preta
+            </button>
+            <button type="button" class="solo-button" title="Mostrar só esta categoria">S</button>
         </div>
-        <button class="solo-button" title="Show only this category">S</button>
-    </div>
-    <div class="legend-item" data-race="indigena">
-        <div class="legend-label">
-            <span class="legend-dot" style="background-color: #e8800c;"></span>
-            <span>Indígena</span>
+        <div class="race-pill" data-race="amarela">
+            <button type="button" class="race-pill-toggle" aria-pressed="true">
+                <span class="race-pill-dot" style="background-color: #89ffa7;"></span>
+                Amarela
+            </button>
+            <button type="button" class="solo-button" title="Mostrar só esta categoria">S</button>
         </div>
-        <button class="solo-button" title="Show only this category">S</button>
+        <div class="race-pill" data-race="parda">
+            <button type="button" class="race-pill-toggle" aria-pressed="true">
+                <span class="race-pill-dot" style="background-color: #3899c9;"></span>
+                Parda
+            </button>
+            <button type="button" class="solo-button" title="Mostrar só esta categoria">S</button>
+        </div>
+        <div class="race-pill" data-race="indigena">
+            <button type="button" class="race-pill-toggle" aria-pressed="true">
+                <span class="race-pill-dot" style="background-color: #e8800c;"></span>
+                Indígena
+            </button>
+            <button type="button" class="solo-button" title="Mostrar só esta categoria">S</button>
+        </div>
     </div>
 </div>
-<div class="zoom-level-indicator" id="zoom-level-indicator">Zoom level: 7</div>
 <div id="tooltip-template" style="display: none;">
     <div class="g-popup-title"><span id="census-tract"></span></div>
     <div class="g-row">
@@ -316,6 +557,7 @@
     mapboxgl.accessToken = 'pk.eyJ1IjoiZXNjcml0b3Jpb2RlZGFkb3MiLCJhIjoiY2t3bWdmcHpjMmJ2cTJucWJ4MGQ1Mm1kbiJ9.4hHJX-1pSevYoBbja7Pq4w';
     var map = new mapboxgl.Map({
         container: 'map',
+        // dark-v10: streets stay readable without competing with the race-dot colors.
         style: 'mapbox://styles/mapbox/dark-v10',
         center: [-43.1729, -22.9068], // Longitude, Latitude for Rio de Janeiro, Brazil
         zoom: 7, // Start at the RJ metro view
@@ -324,15 +566,86 @@
         minzoom: 2
     });
     
-    // Change position of zoom control to top-right
-    map.addControl(new mapboxgl.NavigationControl({showCompass: false}), 'top-right');
+    // Bottom-right like Google Maps zoom +/-; compass stays off so the stack is just +/−.
+    map.addControl(new mapboxgl.NavigationControl({showCompass: false}), 'bottom-right');
     map.scrollZoom.disable();
 
-    function updateZoomIndicator() {
+    // Temporary Geocoding via the official plugin: city / CEP / address without a Google key.
+    // bbox + proximity keep results inside RJ, where the dots actually exist.
+    const RJ_BBOX = [-44.89, -23.37, -40.75, -20.76];
+    // Mapbox postcode matching is weak for Brazilian XXXXX-XXX; remember the last query so we can drop those misses.
+    let lastGeocoderQuery = '';
+
+    function inRjBbox(lng, lat) {
+        return lng >= RJ_BBOX[0] && lat >= RJ_BBOX[1] && lng <= RJ_BBOX[2] && lat <= RJ_BBOX[3];
+    }
+
+    // BrasilAPI fills the 8-digit CEP gap; Mapbox still handles city / bairro / address.
+    function geocodeCep(query) {
+        lastGeocoderQuery = query;
+        const digits = String(query).replace(/\D/g, '');
+        if (digits.length !== 8) {
+            return Promise.resolve([]);
+        }
+        return fetch('https://brasilapi.com.br/api/cep/v2/' + digits)
+            .then(function (res) {
+                if (!res.ok) return [];
+                return res.json();
+            })
+            .then(function (data) {
+                if (!data || data.state !== 'RJ') return [];
+                const coords = data.location && data.location.coordinates;
+                const lng = parseFloat(coords && coords.longitude);
+                const lat = parseFloat(coords && coords.latitude);
+                if (!Number.isFinite(lng) || !Number.isFinite(lat) || !inRjBbox(lng, lat)) {
+                    return [];
+                }
+                const formatted = digits.slice(0, 5) + '-' + digits.slice(5);
+                const placeName = [data.street, data.neighborhood, formatted, data.city, data.state]
+                    .filter(Boolean)
+                    .join(', ');
+                return [{
+                    type: 'Feature',
+                    id: 'cep.' + digits,
+                    text: formatted,
+                    place_name: placeName,
+                    place_type: ['postcode'],
+                    center: [lng, lat],
+                    geometry: { type: 'Point', coordinates: [lng, lat] },
+                    properties: { cep: formatted }
+                }];
+            })
+            .catch(function () {
+                return [];
+            });
+    }
+
+    const geocoder = new MapboxGeocoder({
+        accessToken: mapboxgl.accessToken,
+        mapboxgl: mapboxgl,
+        marker: false,
+        placeholder: 'Buscar cidade, CEP ou endereço',
+        language: 'pt-BR',
+        countries: 'br',
+        types: 'place,locality,neighborhood,postcode,address',
+        proximity: { longitude: -43.1729, latitude: -22.9068 },
+        bbox: RJ_BBOX,
+        clearOnBlur: false,
+        externalGeocoder: geocodeCep,
+        // Hide Mapbox's near-miss postcodes when the user typed a full CEP.
+        filter: function (feature) {
+            const digits = lastGeocoderQuery.replace(/\D/g, '');
+            if (digits.length !== 8) return true;
+            if (!feature.place_type || feature.place_type.indexOf('postcode') === -1) return true;
+            const textDigits = String(feature.text || '').replace(/\D/g, '');
+            return textDigits === digits || feature.id === 'cep.' + digits;
+        }
+    });
+    document.getElementById('search-slot').appendChild(geocoder.onAdd(map));
+
+    function updateDotScale() {
         const zoom = map.getZoom().toFixed(0);
-        document.getElementById('zoom-level-indicator').innerText = 'Zoom level: ' + zoom;
-        
-        // Update dot scale based on zoom level
+        // Legend copy must track zoom so "1 ponto = N pessoas" matches the visible tiles.
         let scale;
         switch(parseInt(zoom)) {
             case 13: scale = 40; break;  // Census tract level
@@ -429,7 +742,8 @@
 
         map.addSource('setores', {
             'type': 'geojson',
-            'data': 'data/censo2022/output/tiles/race/census_tract_RJ.geojson',
+            // Concatenated hover of every built UF (simplified). Per-UF files stay full-res for dots.
+            'data': 'data/censo2022/output/tiles/race/census_tract.geojson',
             'generateId': true
         });
 
@@ -451,6 +765,7 @@
                 'type': 'line',
                 'source': 'setores',
                 'paint': {
+                    // White so the hover stroke stays visible on the dark basemap.
                     'line-color':  'white',
                     'line-width': 1,
                     'line-opacity': [
@@ -462,7 +777,8 @@
         
         map.addSource('municipios', {
             'type': 'geojson',
-            'data': 'data/censo2022/output/tiles/race/municipality_RJ.geojson',
+            // Concatenated hover of every built UF (RJ + wave-1 North).
+            'data': 'data/censo2022/output/tiles/race/municipality.geojson',
             'generateId': true
         });
 
@@ -484,6 +800,7 @@
                 'type': 'line',
                 'source': 'municipios',
                 'paint': {
+                    // White so the hover stroke stays visible on the dark basemap.
                     'line-color':  'white',
                     'line-width': 1.2,
                     'line-opacity': [
@@ -494,8 +811,7 @@
             }
         )
 
-        var initialZoom = map.getZoom();
-        updateZoomIndicator();
+        updateDotScale();
 
         // Add this after all your custom layers to ensure city labels are on top
         map.moveLayer('settlement-label');  // Move city names to top
@@ -649,8 +965,7 @@
     });
 
     map.on('zoom', function () {
-        updateZoomIndicator();
-    
+        updateDotScale();
     })
     
     map.on('zoomend', function () {
@@ -751,17 +1066,17 @@
         ]);
     }
 
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    sidebarToggle.addEventListener('click', function () {
+        const expanded = sidebar.classList.toggle('is-expanded');
+        sidebarToggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        sidebarToggle.setAttribute(
+            'aria-label',
+            expanded ? 'Ocultar legenda e créditos' : 'Mostrar legenda e créditos'
+        );
+    });
+
 </script>
-<footer class="footer">
-    <div class="footer-section">
-        <span>Dados: <a href="https://www.ibge.gov.br/" target="_blank">IBGE</a></span>
-        <span>Censo Demográfico 2022</span>
-    </div>
-    <div class="footer-section">
-        <a href="https://github.com/your-repo" target="_blank">GitHub</a>
-        <a href="https://carabetta.xyz" target="_blank">Carabetta.xyz</a>
-        <span>© 2026 Carabetta.xyz</span>
-    </div>
-</footer>
 </body>
 </html>
