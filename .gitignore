@@ -4,5 +4,6 @@ mbutil
 node_modules
 dots
 output
+__pycache__/
 # tiles
 data

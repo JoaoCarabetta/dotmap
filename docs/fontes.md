@@ -22,17 +22,25 @@ Log of census files used by this project. Raw downloads stay under `data/` (giti
 - **Downloaded:** 2026-09-01
 - **Local path:** `data/censo2022/raw/dicionario_de_dados_agregados_por_setores_censitarios_20260520.xlsx`
 
-## Malha municipal 2022 — RJ (polígonos para dots 4–6)
+## Malha municipal 2022 — por UF (polígonos de hover)
 
-- **Official name:** Malha Municipal Digital 2022 — municípios do Rio de Janeiro
-- **URL:** https://geoftp.ibge.gov.br/organizacao_do_territorio/malhas_territoriais/malhas_municipais/municipio_2022/UFs/RJ/RJ_Municipios_2022.zip
-- **Used by:** `scripts/build_municipality_rj.py` (join onto race counts aggregated from the national setor CSV; input for zoom 3–6 city dots)
+- **Official name:** Malha Municipal Digital 2022 — municípios por UF
+- **URL pattern:** `https://geoftp.ibge.gov.br/organizacao_do_territorio/malhas_territoriais/malhas_municipais/municipio_2022/UFs/{UF}/{UF}_Municipios_2022.zip`
+- **Used by:** `scripts/build_municipality.py` (hover polygons z3–9; dots at z3–6 use clustered setores instead)
 - **Fields used:** `CD_MUN` → `id_municipio`, `NM_MUN` → `municipio`, `SIGLA_UF` → `sigla_uf`
-- **Coverage after join:** 92/92 RJ municipalities; race sum with `X`→0 is 15,996,360 (suppression, same caveat as the setor table)
+- **Built so far:** all 27 UFs
+
+## Malha de setores 2022 — por UF (polígonos para dots 3–14)
+
+- **Official name:** Malha de Setores Censitários 2022 (oficial, não a preliminar)
+- **URL pattern:** `https://geoftp.ibge.gov.br/organizacao_do_territorio/malhas_territoriais/malhas_de_setores_censitarios__divisoes_intramunicipais/censo_2022/setores/shp/UF/{UF}_setores_CD2022.zip`
+- **Used by:** `scripts/build_census_tract.py` (join on `CD_SETOR`; input for zoom 7–14) and `scripts/build_density_clusters.py` (`CD_SIT` / `AREA_KM2`; input for zoom 3–6 clustered dots)
+- **Why per-UF:** the national `BR_setores_CD2022.gpkg` is ~1.4 GB and is not downloaded
+- **Join caveat:** malha has more setores than the race table (empty / no-people cells). Unmatched polygons get zero dots. All 27 UFs are built.
 
 ## Not downloaded in this slice
 
-- Setor malha 2022 (`BR_setores_CD2022.gpkg`, ~1.4 GB). Use `geobr.read_census_tract(year=2022)` when building GeoJSON.
+- National setor malha (`BR_setores_CD2022.gpkg`, ~1.4 GB). Do not download it; use the per-UF SHP above.
 - Alfabetização, saneamento, and religião files. See the national-themes plan.
 
 ## Re-download

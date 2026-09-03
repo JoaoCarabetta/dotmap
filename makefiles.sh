@@ -8,7 +8,7 @@ if [ $# -eq 0 ]; then
 fi
 
 UF=$1
-# Optional comma-separated zoom list so we can rebuild 3-6 without touching 7-14.
+# Optional comma-separated zoom list so we can rebuild 3–6 without touching 7–14.
 ONLY_ZOOMS="${2:-}"
 
 # Increase Node.js memory limit
@@ -17,8 +17,11 @@ export NODE_OPTIONS="--max-old-space-size=8192"
 # Define input GeoJSON files for different aggregation levels
 census_tract_geojson="data/censo2022/output/tiles/race/census_tract_${UF}.geojson"
 municipality_geojson="data/censo2022/output/tiles/race/municipality_${UF}.geojson"
-output_directory="dots"
-tiles_directory="tiles"
+# Density-clustered setores for z3–6. Built by scripts/build_density_clusters.py.
+# Isolate intermediates per UF so building RR does not clobber RJ dots.
+output_directory="dots/${UF}"
+# Per-UF tiles so a new state never overwrites another UF's MBTiles.
+tiles_directory="tiles/${UF}"
 
 # Never rm -rf tiles/: zooms 7-14 are versioned and expensive to regenerate.
 # Each zoom dir below is overwritten only if that zoom is in this run.
@@ -30,8 +33,8 @@ races=("branca" "preta" "amarela" "parda" "indigena")
 fields=$(IFS=,; echo "${races[*]}")
 echo ">> Fields for Mapshaper: $fields"
 
-# Create tiles directory
-echo ">> Creating tiles directory"
+# Create this UF's tiles directory (leave other UFs untouched)
+echo ">> Creating tiles directory for ${UF}"
 mkdir -p $tiles_directory
 
 # mapshaper is not always on PATH; npx matches how tileserver-gl is invoked.
@@ -41,12 +44,12 @@ else
     MAPSHAPER=(npx --yes mapshaper)
 fi
 
-# Zoom 3-6 = municipality (city); 7-14 = census tract.
-# per_dot doubles each step out from 4 so continental views stay a cluster, not a blob.
-min_zoom_levels=(3     4     5    6    7   8   9   10  11  12  13  14)
-max_zoom_levels=(3     4     5    6    7   8   9   10  11  12  13  14)
-per_dot_values=(24000 12000 6000 3000 150 120 90  70  50  35  25  20)
-aggregation_levels=("city" "city" "city" "city" "census" "census" "census" "census" "census" "census" "census" "census")
+# Zoom 3–6 = density-clustered setores; 7–14 = raw setor.
+# per_dot steps ~2.25× into z7 (4500 / 2000 / 900 / 400 / 150).
+min_zoom_levels=(3    4    5   6   7   8   9   10  11  12  13  14)
+max_zoom_levels=(3    4    5   6   7   8   9   10  11  12  13  14)
+per_dot_values=(4500 2000 900 400 150 120 90  70  50  35  25  20)
+aggregation_levels=("cluster" "cluster" "cluster" "cluster" "census" "census" "census" "census" "census" "census" "census" "census")
 
 # Loop through zoom level ranges
 echo ">> Generating dot density files and tilesets"
@@ -74,12 +77,18 @@ for i in "${!min_zoom_levels[@]}"; do
     input_geojson=""
     if [ "$aggregation" = "city" ]; then
         input_geojson=$municipality_geojson
+    elif [ "$aggregation" = "cluster" ]; then
+        # One cluster file per zoom: coarser target_pop at lower z.
+        input_geojson="data/censo2022/output/tiles/race/cluster_${UF}_z${min_zoom}.geojson"
     else
         input_geojson=$census_tract_geojson
     fi
 
     if [ ! -f "$input_geojson" ]; then
         echo "Error: missing input $input_geojson"
+        if [ "$aggregation" = "cluster" ]; then
+            echo "Run: python3 scripts/build_density_clusters.py ${UF}"
+        fi
         exit 1
     fi
 
@@ -109,9 +118,16 @@ for i in "${!min_zoom_levels[@]}"; do
     fi
 done
 
-# Merge all tilesets into a single file
-echo ">> Merging tilesets"
+# Merge every UF × zoom already on disk, not just the UF we just built.
+# SKIP_TILE_JOIN=1 when rebuilding many UFs in a loop, then join once.
+if [ "${SKIP_TILE_JOIN:-}" = "1" ]; then
+    echo ">> Skipping tile-join (SKIP_TILE_JOIN=1)"
+    echo ">> Done"
+    exit 0
+fi
+echo ">> Merging tilesets from all UFs"
 mkdir -p data/tiles
-# tippecanoe's tile-join uses -f (overwrite), not --force
-tile-join -f -o "data/tiles/censo2022.mbtiles" $tiles_directory/*/tiles.mbtiles
+# -f overwrites (tippecanoe has no --force). Default 500KB/tile drops
+# SP+MG overlap at z7 (XYZ 7/47/72, ~508KB) and leaves São Paulo blank.
+tile-join -f --no-tile-size-limit -o "data/tiles/censo2022.mbtiles" tiles/*/*/tiles.mbtiles
 echo ">> Done"

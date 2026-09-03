@@ -6,29 +6,54 @@ This document describes the relationship between zoom levels and dot density in 
 
 ## Configuration Table
 
-Source of truth is [`makefiles.sh`](../makefiles.sh) (`per_dot` + aggregation). The legend in `index.html` matches zooms 3–6; zooms 7–14 in the legend are still the older city/census table and do **not** match the pipeline.
+Source of truth for **how tiles are generated** is [`makefiles.sh`](../makefiles.sh): `aggregation_levels` (`cluster` → `cluster_{UF}_zN.geojson` at z3–6, otherwise `census_tract_{UF}.geojson`) plus `per_dot_values`. Municipality GeoJSON is hover-only. The legend (`1 ponto = N pessoas`) and the localhost HUD **fonte** / pessoas/ponto use this same table. Zoom 15 has no tiles; N is the z14 value (20).
 
-| Zoom | Aggregation | People per dot (`per_dot`) | Approx. RJ dots | Circle radius (px) |
-|------|-------------|----------------------------|-----------------|--------------------|
-| 3 | Municipality (`city`) | 24 000 | ~670 | 0.8 |
-| 4 | Municipality (`city`) | 12 000 | ~1 300 | 0.8 |
-| 5 | Municipality (`city`) | 6 000 | ~2 700 | 0.8 |
-| 6 | Municipality (`city`) | 3 000 | ~5 300 | 0.8 |
-| 7 | Census tract | 150 | ~110 000 | 0.8 |
-| 8 | Census tract | 120 | | 1.0 |
-| 9 | Census tract | 90 | | 1.0 |
-| 10 | Census tract | 70 | | 1.1 |
-| 11 | Census tract | 50 | | 1.1 |
-| 12 | Census tract | 35 | | 1.2 |
-| 13 | Census tract | 25 | | 1.2 |
-| 14 | Census tract | 20 | | 1.2 |
+### Geometry source by zoom (`makefiles.sh`)
+
+| Zoom | Geometry source | `per_dot` (people per dot) |
+|------|-----------------|----------------------------|
+| 3 | setor agrupado (`cluster` → `cluster_*_z3.geojson`) | 4 500 |
+| 4 | setor agrupado (`cluster_*_z4.geojson`) | 2 000 |
+| 5 | setor agrupado (`cluster_*_z5.geojson`) | 900 |
+| 6 | setor agrupado (`cluster_*_z6.geojson`) | 400 |
+| 7 | setor censitário (`census` → `census_tract_*.geojson`) | 150 |
+| 8 | setor censitário | 120 |
+| 9 | setor censitário | 90 |
+| 10 | setor censitário | 70 |
+| 11 | setor censitário | 50 |
+| 12 | setor censitário | 35 |
+| 13 | setor censitário | 25 |
+| 14 | setor censitário | 20 |
+| 15 | *(no tiles — camera overzooms the z=14 setor set)* | 20 |
+
+Hover on the map is a different cutoff: município polygons below zoom 10, setor from 10. Do not read hover as the tile-generation unit.
+
+`per_dot` steps ~2.25× into z7 (4 500 / 2 000 / 900 / 400 / 150). Cluster polygons come from [`scripts/build_density_clusters.py`](../scripts/build_density_clusters.py): adjacent setores of the same density class (urban/povoado vs zona rural) merge until each cluster has about `per_dot` people, so dots stay on settlements instead of filling the município. All **27 UFs** have clustered tiles at zooms 3–6.
+
+| Zoom | Aggregation | People per dot (`per_dot`) | Approx. dots | Circle radius (px) |
+|------|-------------|----------------------------|--------------|--------------------|
+| 3 | Clustered setor | 4 500 | ~390 (SE) | 0.96 |
+| 4 | Clustered setor | 2 000 | ~930 (SE) | 0.96 |
+| 5 | Clustered setor | 900 | ~2 100 (SE) | 0.96 |
+| 6 | Clustered setor | 400 | ~4 600 (SE) | 0.96 |
+| 7 | Census tract | 150 | ~14 000 (SE) / ~110 000 (RJ) | 0.96 |
+| 8 | Census tract | 120 | | 1.04 |
+| 9 | Census tract | 90 | | 1.12 |
+| 10 | Census tract | 70 | | 1.20 |
+| 11 | Census tract | 50 | | 1.28 |
+| 12 | Census tract | 35 | | 1.36 |
+| 13 | Census tract | 25 | | 2.16 |
+| 14 | Census tract | 20 | | 2.16 |
+| 15 | Census tract (overzoom) | 20 | | 2.16 |
 
 ## Details
 
-- **Municipality (zoom 3–6):** Points are scattered inside each município. At zoom 3–4 the continent/country fits the screen; `per_dot` stays high so filled states read as clusters, not a blob. Towns smaller than `per_dot` can receive zero points.
-- **Census tract (zoom 7–14):** Higher precision. The jump from zoom 6 (~5k municipal dots in RJ) to zoom 7 (~110k setor dots in RJ) is intentional with the current pipeline; the original TODO table used city aggregation at zoom 7 (`per_dot` 2000) to soften that step.
-- Recorte atual dos pontos: **RJ, RR, AP, AC**. O resto do Brasil fica vazio até a próxima onda (TO, RO, SE, …, SP).
-- The Mapbox map `minzoom` option is exclusive (`zoom > min`), so `index.html` sets it to **2** in order to reach the z=3 tiles. The vector source still advertises `minzoom: 3`.
+- **Clustered setor (zoom 3–6):** Adjacent census tracts of the same density class are dissolved until each polygon has about `per_dot` people (4 500 / 2 000 / 900 / 400). Dots stay on the urban/povoado footprint instead of filling the município. All 27 UFs use this level.
+- **Census tract (zoom 7–14):** One polygon per setor. z7 is 150 people/dot, so 6→7 is a ~2.7× refinement of the same settlement pattern.
+- Recorte atual dos pontos: **27 UFs** (cobertura nacional). Hover de município/setor vem de `data/tiles/hover.mbtiles` (não do GeoJSON concatenado): o `census_tract.geojson` nacional (~248 MB) trava o Mapbox no zoom alto.
+- The Mapbox map `minZoom` option is exclusive (`zoom > min`), so `index.html` sets it to **2** in order to reach the z=3 tiles. Camera `maxZoom` is **15** so the local Rio shortcut can overzoom; the vector source still advertises `minzoom: 3` / `maxzoom: 14` (no z=15 PBF).
+- The map **opens on Brazil as a whole**, not Rio: constructor fallback `[-51.9, -14.2]` at zoom 3.5, then `fitBounds` of `[[-74, -34], [-32, 6]]` on load so Norte/Sul stay on screen across viewports. Point tiles cover all 27 UFs. A `tile-join` without `--no-tile-size-limit` still drops the SP+MG overlap at z7 (XYZ `7/47/72`, ~508 KB vs the 500 KB default) and leaves São Paulo blank even though `tiles/SP/` is complete.
+- Circle radius is a linear interpolate on stops 3 / 7 / 12 / 13 (`0.96` → `0.96` → `1.36` → `2.16` px): ×1.2 everywhere, then an extra ×1.5 from zoom 13 (held through 15). The z12 stop keeps the 50% kick from ramping in at 12. People-per-dot is unchanged.
 
 # Demographic Data Structure
 
@@ -49,79 +74,104 @@ Contains demographic data at the census tract level with the following attribute
 - `parda`: Brown/Mixed population count
 - `indigena`: Indigenous population count
 
-### Municipality Level
+### Clustered setor (zooms 3–6)
 
-`output/tiles/race/municipality.geojson` (local hover file used by the map)
-Contains aggregated demographic data at the municipality level with the following attributes:
-- `id_municipio`: Municipality code
-- `sigla_uf`: State code
-- `municipio`: Municipality name
-- `populacao`: Total population
-- `branca`: White population count
-- `preta`: Black population count
-- `amarela`: Asian population count
-- `parda`: Brown/Mixed population count
-- `indigena`: Indigenous population count
+`output/tiles/race/cluster_{UF}_z3.geojson` … `cluster_{UF}_z6.geojson` from [`scripts/build_density_clusters.py`](../scripts/build_density_clusters.py). Same race fields as municipality, plus:
+- `cluster_id`: `{UF}-z{zoom}-{n}`
+- `density_class`: `dense` (CD_SIT 1–3, 5–7) or `sparse` (8–9)
+- `sigla_uf`, `populacao`, five race counts (sums of member setores)
+
+Clusters may cross município borders inside the UF. They are placement polygons for `mapshaper -dots`, not a hover layer.
 
 ## Usage Notes
 - Census tract data is suitable for detailed local analysis
-- Municipality data is better for regional patterns and overview
+- Clustered setores keep coarse-zoom dots on settlements
+- Municipality polygons are hover-only (z3–9), not a dot-placement unit
 - All population counts are absolute numbers
 
-# Interactive Legend Controls
+# Interactive Race Filter
 
-## Race Category Toggles
+Race filters live in the **legend card** (`.detail-card`), pinned to the bottom-left above the slim footer. Each legend row is a toggle. There is no Raça chip or dropdown. Do not add other layer chips yet.
 
-The legend provides two ways to control the visibility of racial categories:
+## Legend rows
+- One row per IBGE category: color swatch + name. Clicking the row **toggles** that race. Multi-select is the default. Off rows fade (`is-off`).
+- Each row has an **S** (solo) button. On hover/focus it appears; on ≤640px it stays visible because there is no hover.
 
-### Category Toggle
-- Click on any category label to toggle its visibility
-- Multiple categories can be visible simultaneously
-- Categories can be toggled independently
-
-### Solo Mode
-- Each category has a "S" (Solo) button that appears on hover
-- Click the Solo button to show only that category
-- All other categories will be automatically hidden
-- Useful for analyzing individual racial distributions
-
-### Visual Feedback
-- Disabled categories appear semi-transparent
-- Hover effects indicate interactive elements
-- Solo buttons appear on hover for a cleaner interface
-- All categories are visible by default
-
-### Available Categories
+## Available Categories
 - Branca (White)
 - Preta (Black)
 - Amarela (Asian)
 - Parda (Brown/Mixed)
 - Indígena (Indigenous)
 
-### Technical Implementation
-- Uses Mapbox GL JS filters for visibility control
-- Maintains a Set of active races for efficient filtering
-- Separate click handlers for toggle and solo modes
-- Updates are applied immediately to the map visualization
+Do not add categories beyond these five IBGE keys (`branca`, `preta`, `amarela`, `parda`, `indigena`).
+
+## Technical Implementation
+- Mapbox GL JS `setFilter` / `circle-opacity` on the `points` layer
+- A `Set` of active races
+- Separate handlers on `.race-row-toggle` and `.solo-button`
+- `syncFilterUi()` keeps the legend rows in the same Set
 
 # Basemap
 
-The map uses Mapbox **dark-v10** (`mapbox://styles/mapbox/dark-v10`): a dark street basemap so the race-dot colors stay the visual focus.
+The map uses Mapbox **light-v10** (`mapbox://styles/mapbox/light-v10`): land/water, coastlines, admin boundaries, and light roads, paired with Mapbox GL JS 2.3.1. After the style is ready, every `symbol` layer is set to `visibility: none` so place/road/POI labels stay off. Geography layers stay. Do not switch back to dark-v10 or to a blank custom style.
 
-Hover outlines on `setores-border` and `municipios-border` are `white` so they stay visible on the dark style.
+Hover outlines on `setores-border` and `municipios-border` are `#202124` so they stay visible on the light style. The matching fill layers (`setores-fill`, `municipios-fill`) stay a hit target at opacity 0 and pick up an 8% `#202124` tint only while hovered.
 
-Dot colors are unchanged. The floating sidebar and the hover tooltip use light chrome (white panels, dark text) on top of the dark map.
+### Dot colors
 
-# Sidebar chrome
+| Key | Hex | Why |
+|---|---|---|
+| `branca` | `#4daf4a` | green — ColorBrewer Set1, permuted from HUD test; contrast on light-v10 |
+| `preta` | `#ff7f00` | orange |
+| `amarela` | `#377eb8` | blue |
+| `parda` | `#e41a1c` | red |
+| `indigena` | `#984ea3` | purple |
 
-The map is full-bleed (`#map` is `100vw` / `100vh`). There is no fixed header or footer bar. Title, explanation, search, race legend, and credits live in a single floating left card (`.sidebar`, ~340px, 16px from the top-left) so the map is not letterboxed by 60px chrome and so the legend is not a second competing box.
+This mapping is the product default (`circle-color` match + legend swatches) and HUD **Atual**. Production users get it with no HUD. Do not restore the old red/gold/mint set (`#fb3640` / `#d4b000` / `#89ffa7` / `#3899c9` / `#e8800c`). The two floating cards, the search field, and the slim footer keep light chrome (white surfaces, dark text) on top of the light map.
 
-The product title (`h1.sidebar-title` and the page `<title>`) is **Onde o Brasil mora**. It is product-level so later views (other census themes) can share the same name. The subtitle (`p.sidebar-subtitle`) is **Cada ponto é um grupo de pessoas. A cor é a raça no Censo 2022.** — it explains the viz for someone who has never seen the map (what the dots are, then what the colors mean and the source). Do not say “um ponto por pessoa”: one dot is N people and N changes with zoom. Do not restore the old h1 “Distribuição Racial no Brasil” (too close to Pata’s 2015 *Mapa Racial do Brasil*) or a one-word “Raça” label. Future views rewrite the explanation, not the h1. There is no logo. Zoom is changed with the Mapbox control (top-right, 16px inset on desktop; bottom-right on viewports ≤520px so it does not sit on the full-width card); there is no on-screen “Zoom level: N” badge. The public URL slug remains `brazildots`. The hover tooltip stays a map overlay; it is not in the sidebar.
+# Map chrome
 
-The card also has a **search box** powered by [`mapbox-gl-geocoder`](https://github.com/mapbox/mapbox-gl-geocoder) v5 against Mapbox Temporary Geocoding — the same token as the basemap, no Google key. Placeholder: **Buscar cidade, CEP ou endereço**. Results are limited to Brazil and to an RJ bounding box (`[-44.89, -23.37, -40.75, -20.76]`) with proximity to Rio, because the dots only exist in that recorte. Selecting a result `fitBounds` the map; there is no persistent pin so the marker would not compete with the race-dot colors. Full Brazilian CEPs (`XXXXX-XXX`) are resolved via [BrasilAPI](https://brasilapi.com.br/) (`/cep/v2`) because Mapbox postcode matching is weak for that format; city, bairro, and address stay on Mapbox. CEPs outside RJ are dropped.
+The map is full-bleed (`#map` is `100vw` / `100vh`). There is **no** fixed header and **no left icon rail**. Chrome is two floating cards plus a slim full-width footer (~32px): intro top-left (`.chrome-stack`, 14px inset) and the legend bottom-left, above the footer. Zoom `+/-` stays at the bottom-right, just above the footer. The first camera is a Brazil overview (`fitBounds` of `[[-74, -34], [-32, 6]]`); search still uses the RJ bbox.
 
-On viewports ≤520px the card stays a short top strip (title, subtitle, search). A chevron (`#sidebar-toggle`) expands or collapses the legend and credits so a ~390px-wide phone still has a usable map. Solo buttons stay visible on that breakpoint because there is no hover.
+## Left card (`.intro-card`)
+
+White rounded card, top-left. Title + explainer + divider + search (Arquivo da Violência layout).
+
+The product title (`h1.intro-title` and the page `<title>`) is **Onde o Brasil mora**. It is product-level so later views can share the same name. The explainer (`p.intro-explainer`) is:
+
+**Cada ponto é um grupo de pessoas. A cor é a raça declarada no Censo Demográfico 2022 (IBGE). O número de pessoas por ponto muda com o zoom.**
+
+Do not say “um ponto por pessoa”: one dot is N people and N changes with zoom. Do not restore the old h1 “Distribuição Racial no Brasil” (too close to Pata’s 2015 *Mapa Racial do Brasil*). Future views rewrite the explanation, not the h1.
+
+Search sits **inside** this card, powered by [`mapbox-gl-geocoder`](https://github.com/mapbox/mapbox-gl-geocoder) v5 against Mapbox Temporary Geocoding — the same token as the basemap, no Google key. Placeholder: **Busque por cidade, bairro, estado ou CEP**. Results are limited to Brazil and to an RJ bounding box (`[-44.89, -23.37, -40.75, -20.76]`) with proximity to Rio, because the dots only exist in that recorte. Selecting a result `fitBounds` the map; there is no persistent pin so the marker would not compete with the race-dot colors. Full Brazilian CEPs (`XXXXX-XXX`) are resolved via [BrasilAPI](https://brasilapi.com.br/) (`/cep/v2`) because Mapbox postcode matching is weak for that format; city, bairro, and address stay on Mapbox. CEPs outside RJ are dropped.
+
+Do not restore a standalone search chrome or a Raça chip.
+
+## Legend card (`.detail-card`)
+
+White rounded card, pinned **bottom-left** (`position: fixed; left: 14px`), sitting above the slim footer (`bottom: calc(var(--footer-height) + 14px)`). Compact (~268px wide). It is **not** stacked under the intro card. It holds:
+
+1. The five race rows (the filter — see [Interactive Race Filter](#interactive-race-filter)).
+2. `1 ponto = N pessoas` (existing zoom scale).
+
+Hover numbers live in the Mapbox **popup on the map** (município below zoom 10, setor from zoom 10): name, race shares, and população. The dark hover outline stays on the map. The legend card does not repeat those numbers.
+
+There is no logo. Zoom is the Mapbox `NavigationControl` at the bottom-right; the public page has no on-screen “Zoom level: N” badge. The public URL slug remains `brazildots`.
+
+On ≤640px the intro card can shrink so it does not collide with the bottom-left legend. Solo buttons stay visible on that breakpoint.
+
+# Local dev panel
+
+A compact HUD is injected only on loopback hosts (`localhost`, `127.0.0.1`, `::1`, `*.localhost`). Production (`carabetta.xyz`) never gets the toggle or the panel.
+
+- Off by default. Toggle with the top-right **dev** button or `D` / `` ` `` (ignored while typing in the search field). `sessionStorage` key `dotmap-dev-panel` keeps it open across refresh.
+- Live fields, updated on `move` / `zoom`: pessoas/ponto (same `peoplePerDot` table as the legend and `makefiles.sh`), center, bbox, hover layer (`município` below zoom 10, `setor` from 10), and **fonte** (tile-generation unit from `makefiles.sh`: setor agrupado at z3–6, setor at z7–14, setor overzoom at 15). Fonte is not hover.
+- **Zoom** and **raio** are editable (localhost only). Zoom is a slider + number (2–15) that calls `map.setZoom`. Raio is a **multiplier** (0.5×–3×, default 1) on top of the coded interpolate (so the z13 ×1.5 bump stays). `reset` returns the multiplier to 1. The effective px is shown next to the control. Multiplier is stored in `sessionStorage` key `dotmap-dev-radius-mult`. Keyboard shortcuts ignore these inputs the same way as the geocoder.
+- **Cores** (localhost only): a select of 5-hue presets mapped to `branca`, `preta`, `amarela`, `parda`, `indigena`. Applying a palette updates the points `circle-color` match and the legend swatches. Presets: **Atual** (product default — ColorBrewer Set1 hues permuted from HUD test), **Dark2** (ColorBrewer), **Set1** (ColorBrewer, unpermuted), **Okabe–Ito** (colorblind-safer; skips `#F0E442` because it vanishes on light-v10), **Print** (high-contrast), **Terra** (muted earth tones). **permutar** rotates assignment (each race takes the next of the same 5 hues; 5 steps, not 5! buttons). **embaralhar** shuffles those 5 hues once. **reset** restores the selected palette’s default mapping. Compact swatch + hex list shows the current key → color. Stored in `sessionStorage` as `dotmap-dev-palette`, `dotmap-dev-permute` (rotation index 0–4), and `dotmap-dev-hues` (working order after shuffle). Production (`carabetta.xyz`) never loads this UI or these keys.
+- Camera jumps (localhost only, ignored while typing in search): **1** Brasil (`fitBounds` of the default country bbox), **2** Rio center `[-43.1729, -22.9068]` at zoom **15**. Same actions as the two HUD buttons.
+- Monospace overlay, not a product card. All logic stays in `index.html`. The panel scrolls if the color block would otherwise cover zoom/footer.
 
 # Credits
 
-Credits sit at the bottom of the sidebar card, not in a full-width footer. “Dados: IBGE” links to the official [Agregados por Setores Censitários 2022](https://ftp.ibge.gov.br/Censos/Censo_Demografico_2022/Agregados_por_Setores_Censitarios/) FTP collection (the source documented in [`fontes.md`](fontes.md)), not the IBGE homepage. “Censo Demográfico 2022” links to the [Censo 2022 dataset on Base dos Dados](https://basedosdados.org/dataset/08a1546e-251f-4546-9fe0-b1e6ab2b203d) (the 2022-specific page, not the older `br-ibge-censo-demografico` collection). Then: [GitHub](https://github.com/JoaoCarabetta/dotmap) (this repo), [Carabetta.xyz](https://carabetta.xyz), and `© 2026 Carabetta.xyz`.
+Credits sit in `.map-footer`, a slim full-width bar (~32px, wraps on narrow screens), not in either card and not as a second explainer. “Dados: IBGE” links to the official [Agregados por Setores Censitários 2022](https://ftp.ibge.gov.br/Censos/Censo_Demografico_2022/Agregados_por_Setores_Censitarios/) FTP collection (the source documented in [`fontes.md`](fontes.md)), not the IBGE homepage. “Censo Demográfico 2022” links to the [Censo 2022 dataset on Base dos Dados](https://basedosdados.org/dataset/08a1546e-251f-4546-9fe0-b1e6ab2b203d) (the 2022-specific page, not the older `br-ibge-censo-demografico` collection). Then: [GitHub](https://github.com/JoaoCarabetta/dotmap) (this repo), [Carabetta.xyz](https://carabetta.xyz), and `© 2026 Carabetta.xyz`.

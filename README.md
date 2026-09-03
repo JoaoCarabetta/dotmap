@@ -14,7 +14,8 @@ Dependencies: Node.js (for `npx tileserver-gl`), [tippecanoe](https://github.com
 
 ```sh
 mkdir -p data/tiles
-tile-join -f -o data/tiles/censo2022.mbtiles tiles/*/tiles.mbtiles
+# --no-tile-size-limit: default 500KB/tile drops SP+MG at z7 (~508KB).
+tile-join -f --no-tile-size-limit -o data/tiles/censo2022.mbtiles tiles/*/*/tiles.mbtiles
 
 npx --yes tileserver-gl -c config.json -V
 ```
@@ -31,18 +32,19 @@ If 8000 is free you can use `uv run python -m http.server` instead (default 8000
 
 Without restoring extra files from elsewhere:
 
-- **Works:** basemap + colored race dots (zooms 3–14; 3–6 are municipality-level, RJ only)
-- **404:** hover GeoJSON (`data/censo2022/output/tiles/race/*_RJ.geojson`) and `assets/logo.png`
+- **Works:** light-v10 basemap (labels hidden) + colored race dots (zooms 3–14; 3–6 clustered setor). Coverage in git: **27 UFs** (nacional).
+- **404:** hover tiles (`data/tiles/hover.mbtiles`) until `python3 scripts/ibge_uf.py tiles`
 
 ## Create the dataset from scratch
 
-Only if you have the BigQuery project / raw census files. Do not run this just to view the map: a full `./makefiles.sh RJ` regenerates zooms 7–14 (expensive) and needs GeoJSON that is not in git.
+Needs the national race CSV under `data/` (see [docs/fontes.md](docs/fontes.md)). Do not run this just to view the map: a full `./makefiles.sh UF` regenerates zooms 7–14 for that state (expensive). Other UFs already in `tiles/` are left alone.
 
-1. Run the notebook https://console.cloud.google.com/bigquery?ws=!1m7!1m6!12m5!1m3!1srj-escritorio-dev!2ssouthamerica-east1!3s371e01b4-ccd6-429a-b0ef-c73c384a1dd7!2e2 (or `notebooks/treat_2022.ipynb`).
-2. Download / write GeoJSON under `data/censo2022/output/tiles/race/`. For municipality dots only: `python3 scripts/build_municipality_rj.py`.
-3. Build dots and tiles for one UF (argument is required):
+Add or rebuild one UF (all 27 are already in `tiles/`, including SP and MG):
 
 ```sh
-./makefiles.sh RJ            # all zooms 3–14
-./makefiles.sh RJ 3,4,5,6    # municipal zooms only; leaves 7–14 alone
+python3 scripts/build_municipality.py RR
+python3 scripts/build_census_tract.py RR
+python3 scripts/build_density_clusters.py RR   # clustered setores for zooms 3–6
+./makefiles.sh RR            # all zooms 3–14 for that UF, then tile-join every UF
+./makefiles.sh RR 3,4,5,6    # clustered zooms only (needs the cluster GeoJSON)
 ```
