@@ -1,36 +1,68 @@
 #!/bin/bash
 # Check if UF argument is provided
 if [ $# -eq 0 ]; then
-    echo "Usage: $0 <UF> [zooms]"
+    echo "Usage: $0 <UF> [zooms] [race|income|deaths]"
     echo "Example: $0 RJ"
-    echo "Example: $0 RJ 3,4,5,6"
+    echo "Example: $0 SE 3,4,5,6 income"
     exit 1
 fi
 
 UF=$1
 # Optional comma-separated zoom list so we can rebuild 3–6 without touching 7–14.
 ONLY_ZOOMS="${2:-}"
+THEME="${3:-race}"
+# A theme may be passed as the second argument when all zooms are wanted.
+case "$ONLY_ZOOMS" in
+    race|income|deaths)
+        THEME="$ONLY_ZOOMS"
+        ONLY_ZOOMS=""
+        ;;
+esac
 
 # Increase Node.js memory limit
 export NODE_OPTIONS="--max-old-space-size=8192"
 
 # Define input GeoJSON files for different aggregation levels
-census_tract_geojson="data/censo2022/output/tiles/race/census_tract_${UF}.geojson"
-municipality_geojson="data/censo2022/output/tiles/race/municipality_${UF}.geojson"
+theme_directory="data/censo2022/output/tiles/${THEME}"
+census_tract_geojson="${theme_directory}/census_tract_${UF}.geojson"
 # Density-clustered setores for z3–6. Built by scripts/build_density_clusters.py.
 # Isolate intermediates per UF so building RR does not clobber RJ dots.
-output_directory="dots/${UF}"
+if [ "$THEME" = "race" ]; then
+    output_directory="dots/${UF}"
+    tiles_directory="tiles/${UF}"
+else
+    output_directory="dots/${THEME}/${UF}"
+    tiles_directory="tiles/${THEME}/${UF}"
+fi
 # Per-UF tiles so a new state never overwrites another UF's MBTiles.
-tiles_directory="tiles/${UF}"
 
 # Never rm -rf tiles/: zooms 7-14 are versioned and expensive to regenerate.
 # Each zoom dir below is overwritten only if that zoom is in this run.
 
-# Define races
-races=("branca" "preta" "amarela" "parda" "indigena")
+case "$THEME" in
+    race)
+        categories=("branca" "preta" "amarela" "parda" "indigena")
+        point_property="race"
+        per_dot_values=(4500 2000 900 400 150 120 90 70 50 35 25 20)
+        ;;
+    income)
+        categories=("income_ate_1sm" "income_1_2sm" "income_2_3sm" "income_3_5sm" "income_5_10sm" "income_mais_10sm" "income_sem_dado")
+        point_property="cat"
+        per_dot_values=(1500 700 300 130 50 40 30 24 17 12 8 7)
+        ;;
+    deaths)
+        categories=("death_0_14" "death_15_29" "death_30_59" "death_60_plus" "death_age_suppressed")
+        point_property="cat"
+        per_dot_values=(200 100 50 25 12 10 8 6 4 3 2 1)
+        ;;
+    *)
+        echo "Unknown theme: $THEME (expected race, income, or deaths)"
+        exit 1
+        ;;
+esac
 
-# Combine races into a string for Mapshaper
-fields=$(IFS=,; echo "${races[*]}")
+# Combine theme categories into a string for Mapshaper.
+fields=$(IFS=,; echo "${categories[*]}")
 echo ">> Fields for Mapshaper: $fields"
 
 # Create this UF's tiles directory (leave other UFs untouched)
@@ -48,7 +80,6 @@ fi
 # per_dot steps ~2.25× into z7 (4500 / 2000 / 900 / 400 / 150).
 min_zoom_levels=(3    4    5   6   7   8   9   10  11  12  13  14)
 max_zoom_levels=(3    4    5   6   7   8   9   10  11  12  13  14)
-per_dot_values=(4500 2000 900 400 150 120 90  70  50  35  25  20)
 aggregation_levels=("cluster" "cluster" "cluster" "cluster" "census" "census" "census" "census" "census" "census" "census" "census")
 
 # Loop through zoom level ranges
@@ -75,11 +106,9 @@ for i in "${!min_zoom_levels[@]}"; do
 
     # Select input file based on aggregation level
     input_geojson=""
-    if [ "$aggregation" = "city" ]; then
-        input_geojson=$municipality_geojson
-    elif [ "$aggregation" = "cluster" ]; then
+    if [ "$aggregation" = "cluster" ]; then
         # One cluster file per zoom: coarser target_pop at lower z.
-        input_geojson="data/censo2022/output/tiles/race/cluster_${UF}_z${min_zoom}.geojson"
+        input_geojson="${theme_directory}/cluster_${UF}_z${min_zoom}.geojson"
     else
         input_geojson=$census_tract_geojson
     fi
@@ -87,15 +116,15 @@ for i in "${!min_zoom_levels[@]}"; do
     if [ ! -f "$input_geojson" ]; then
         echo "Error: missing input $input_geojson"
         if [ "$aggregation" = "cluster" ]; then
-            echo "Run: python3 scripts/build_density_clusters.py ${UF}"
+            echo "Run: python3 scripts/build_density_clusters.py ${UF} 3,4,5,6 ${THEME}"
         fi
         exit 1
     fi
 
-    # Generate dot density file for the zoom level range with race data
+    # Keep one stable source-layer while the property identifies the active theme.
     echo ">> Running mapshaper for zoom levels $min_zoom to $max_zoom using ${aggregation} data"
     "${MAPSHAPER[@]}" $input_geojson -dots fields=$fields values=$fields \
-    save-as=race per-dot=$per_dot evenness=0.5 -o $output_geojson 
+    save-as=$point_property per-dot=$per_dot evenness=0.5 -o $output_geojson
 
     # Check for errors
     if [ $? -ne 0 ]; then
@@ -109,7 +138,7 @@ for i in "${!min_zoom_levels[@]}"; do
 
     # Generate tileset
     echo ">> Running tippecanoe for zoom levels $min_zoom to $max_zoom"
-    tippecanoe -o "${tileset_directory}/tiles.mbtiles" -z$max_zoom -Z$min_zoom $output_geojson --force -P -r1 --drop-fraction-as-needed
+    tippecanoe -o "${tileset_directory}/tiles.mbtiles" -l points -z$max_zoom -Z$min_zoom $output_geojson --force -P -r1 --drop-fraction-as-needed
 
     # Check for errors
     if [ $? -ne 0 ]; then
@@ -127,7 +156,11 @@ if [ "${SKIP_TILE_JOIN:-}" = "1" ]; then
 fi
 echo ">> Merging tilesets from all UFs"
 mkdir -p data/tiles
-# -f overwrites (tippecanoe has no --force). Default 500KB/tile drops
-# SP+MG overlap at z7 (XYZ 7/47/72, ~508KB) and leaves São Paulo blank.
-tile-join -f --no-tile-size-limit -o "data/tiles/censo2022.mbtiles" tiles/*/*/tiles.mbtiles
+if [ "$THEME" = "race" ]; then
+    # Default 500KB/tile drops SP+MG at z7 and leaves São Paulo blank.
+    tile-join -f --no-tile-size-limit -o "data/tiles/censo2022.mbtiles" tiles/*/*/tiles.mbtiles
+else
+    # Theme glob is isolated so prototype MBTiles cannot absorb race tiles.
+    tile-join -f --no-tile-size-limit -o "data/tiles/censo2022_${THEME}.mbtiles" "tiles/${THEME}"/*/*/tiles.mbtiles
+fi
 echo ">> Done"

@@ -4,6 +4,10 @@ Agent instructions for this repo live in [`AGENTS.md`](../AGENTS.md). Project la
 
 This document describes the relationship between zoom levels and dot density in the map visualization.
 
+The UI switches between **Raça** and **Renda**, both with 27-UF coverage. Renda dots represent occupied permanent private households and are colored by the setor median income of responsible persons with income.
+
+**Óbitos is built but hidden from the UI for now**: the tiles (`tiles/deaths/`, `censo2022_deaths` in `config.json`), the makefiles theme, and the `deaths` entry in `VIEW_CONFIGS` all stay, but the switcher buttons were removed and `HIDDEN_VIEWS` in `index.html` makes `setView('deaths')` a no-op (persisted `dotmap-view: deaths` falls back to race on load). Óbitos dots represent deaths reported for January 2019–July 2022, colored by age at death; sex is summed, not shown. To un-hide: restore the button in both switchers and drop `deaths` from `HIDDEN_VIEWS`.
+
 ## Configuration Table
 
 Source of truth for **how tiles are generated** is [`makefiles.sh`](../makefiles.sh): `aggregation_levels` (`cluster` → `cluster_{UF}_zN.geojson` at z3–6, otherwise `census_tract_{UF}.geojson`) plus `per_dot_values`. Municipality GeoJSON is hover-only. The legend (`1 ponto = N pessoas`) and the localhost HUD **fonte** / pessoas/ponto use this same table. Zoom 15 has no tiles; N is the z14 value (20).
@@ -25,6 +29,29 @@ Source of truth for **how tiles are generated** is [`makefiles.sh`](../makefiles
 | 13 | setor censitário | 25 |
 | 14 | setor censitário | 20 |
 | 15 | *(no tiles — camera overzooms the z=14 setor set)* | 20 |
+
+### Theme density scales (national)
+
+These are independent units and must not reuse the race legend. Income (~72.4M households) stays about one third of the race schedule so the two views have similar visual density. Deaths (~3.63M visible) stay sparser on purpose — matching race 1:1 would make mortality look as populated as the census.
+
+| Zoom | Renda: domicílios/ponto | Óbitos/ponto |
+|---|---:|---:|
+| 3 | 1 500 | 200 |
+| 4 | 700 | 100 |
+| 5 | 300 | 50 |
+| 6 | 130 | 25 |
+| 7 | 50 | 12 |
+| 8 | 40 | 10 |
+| 9 | 30 | 8 |
+| 10 | 24 | 6 |
+| 11 | 17 | 4 |
+| 12 | 12 | 3 |
+| 13 | 8 | 2 |
+| 14–15 | 7 | 1 |
+
+Income categories use `V06006` divided by the 2022 minimum wage (R$ 1,212): up to 1, 1–2, 2–3, 3–5, 5–10, and over 10 minimum wages, plus unavailable. All household dots in a setor share its median-income category; the map does not infer household-level income.
+
+Mortality categories are `0–14`, `15–29`, `30–59`, `60+`, and `idade suprimida`. The last category is required because IBGE suppresses detailed-age cells much more often than sex totals. Nationally, about 3.63M deaths have a visible sex total and 1.91M have a visible detailed age.
 
 Hover on the map is a different cutoff: município polygons below zoom 10, setor from 10. Do not read hover as the tile-generation unit.
 
@@ -52,7 +79,7 @@ Hover on the map is a different cutoff: município polygons below zoom 10, setor
 - **Census tract (zoom 7–14):** One polygon per setor. z7 is 150 people/dot, so 6→7 is a ~2.7× refinement of the same settlement pattern.
 - Recorte atual dos pontos: **27 UFs** (cobertura nacional). Hover de município/setor vem de `data/tiles/hover.mbtiles` (não do GeoJSON concatenado): o `census_tract.geojson` nacional (~248 MB) trava o Mapbox no zoom alto.
 - The Mapbox map `minZoom` option is exclusive (`zoom > min`), so `index.html` sets it to **2** in order to reach the z=3 tiles. Camera `maxZoom` is **15** so the local Rio shortcut can overzoom; the vector source still advertises `minzoom: 3` / `maxzoom: 14` (no z=15 PBF).
-- The map **opens on Brazil as a whole**, not Rio: constructor fallback `[-51.9, -14.2]` at zoom 3.5, then `fitBounds` of `[[-74, -34], [-32, 6]]` on load so Norte/Sul stay on screen across viewports. Point tiles cover all 27 UFs. A `tile-join` without `--no-tile-size-limit` still drops the SP+MG overlap at z7 (XYZ `7/47/72`, ~508 KB vs the 500 KB default) and leaves São Paulo blank even though `tiles/SP/` is complete.
+- The map **opens on Brazil, not Rio**: constructor fallback `[-51.9, -14.2]` at zoom 3.5, then a camera calculated from `[[-74, -34], [-32, 6]]`. When that whole-country fit would fall below the first point tiles on a narrow portrait screen, startup keeps the national center and clamps to zoom 3.01 so dots render instead of showing an empty overview. Point tiles cover all 27 UFs. A `tile-join` without `--no-tile-size-limit` still drops the SP+MG overlap at z7 (XYZ `7/47/72`, ~508 KB vs the 500 KB default) and leaves São Paulo blank even though `tiles/SP/` is complete.
 - Circle radius is a linear interpolate on stops 3 / 7 / 12 / 13 (`0.96` → `0.96` → `1.36` → `2.16` px): ×1.2 everywhere, then an extra ×1.5 from zoom 13 (held through 15). The z12 stop keeps the 50% kick from ramping in at 12. People-per-dot is unchanged.
 
 # Demographic Data Structure
@@ -91,20 +118,24 @@ Clusters may cross município borders inside the UF. They are placement polygons
 
 # Interactive Race Filter
 
-Race filters live in the **legend card** (`.detail-card`), pinned to the bottom-left above the slim footer. Each legend row is a toggle. There is no Raça chip or dropdown. Do not add other layer chips yet.
+Race filters live in the **legend list inside the single left panel** (`.intro-card`, below the search field). Each legend row is a toggle. There is no Raça chip or dropdown on desktop. Do not add other layer chips yet.
 
 ## Legend rows
 - One row per IBGE category: color swatch + name. Clicking the row **toggles** that race. Multi-select is the default. Off rows fade (`is-off`).
-- Each row has an **S** (solo) button. On hover/focus it appears; on ≤640px it stays visible because there is no hover.
+- Each row has an **S** (solo) button. On hover/focus it appears; on ≤640px (inside the bottom sheet) it stays visible (34×34px) because there is no hover, and rows grow from 32px to **44px** so every filter is a comfortable touch target.
+- On phones the same categories also render as the **chip rail** over the map (peek state): tap toggles, **long-press (500ms) solos**. Rows, chips, and the map filter all share one `Set` per view (`toggleCategory` / `soloCategory`), so no surface can drift.
 
 ## Available Categories
-- Branca (White)
-- Preta (Black)
-- Amarela (Asian)
-- Parda (Brown/Mixed)
-- Indígena (Indigenous)
 
-Do not add categories beyond these five IBGE keys (`branca`, `preta`, `amarela`, `parda`, `indigena`).
+Display order everywhere the race view lists categories (legend rows, chip rail, sheet legend, hover/tap breakdowns) is **population size, descending** (Censo 2022):
+
+1. Parda (Brown/Mixed)
+2. Branca (White)
+3. Preta (Black)
+4. Indígena (Indigenous)
+5. Amarela (Asian)
+
+Do not add categories beyond these five IBGE keys (`branca`, `preta`, `amarela`, `parda`, `indigena`). Note `RACE_KEYS` in `index.html` keeps its own fixed order — it is the palette-assignment order for the dev HUD, not the display order; reordering it would change which hue each race gets.
 
 ## Technical Implementation
 - Mapbox GL JS `setFilter` / `circle-opacity` on the `points` layer
@@ -114,9 +145,9 @@ Do not add categories beyond these five IBGE keys (`branca`, `preta`, `amarela`,
 
 # Basemap
 
-The map uses Mapbox **light-v10** (`mapbox://styles/mapbox/light-v10`): land/water, coastlines, admin boundaries, and light roads, paired with Mapbox GL JS 2.3.1. After the style is ready, every `symbol` layer is set to `visibility: none` so place/road/POI labels stay off. Geography layers stay. Do not switch back to dark-v10 or to a blank custom style.
+The map uses Mapbox **light-v10** (`mapbox://styles/mapbox/light-v10`). On load, every `symbol` layer is set to `visibility: none` so place/road/POI labels stay off while land/water, coastlines, admin boundaries, and light roads remain.
 
-Hover outlines on `setores-border` and `municipios-border` are `#202124` so they stay visible on the light style. The matching fill layers (`setores-fill`, `municipios-fill`) stay a hit target at opacity 0 and pick up an 8% `#202124` tint only while hovered.
+Hover outlines on `setores-border` and `municipios-border` are `#202124` with an 8% matching hover tint. Dots keep their category fill colors with no extra halo.
 
 ### Dot colors
 
@@ -128,50 +159,92 @@ Hover outlines on `setores-border` and `municipios-border` are `#202124` so they
 | `parda` | `#e41a1c` | red |
 | `indigena` | `#984ea3` | purple |
 
-This mapping is the product default (`circle-color` match + legend swatches) and HUD **Atual**. Production users get it with no HUD. Do not restore the old red/gold/mint set (`#fb3640` / `#d4b000` / `#89ffa7` / `#3899c9` / `#e8800c`). The two floating cards, the search field, and the slim footer keep light chrome (white surfaces, dark text) on top of the light map.
+This mapping is the product default (`circle-color` match + legend swatches) and HUD **Atual**. Production users get it with no HUD. Do not restore the old red/gold/mint set (`#fb3640` / `#d4b000` / `#89ffa7` / `#3899c9` / `#e8800c`). The single panel, the search field, and the slim footer keep light chrome (white surfaces, dark text) on top of the light map.
 
 # Map chrome
 
-The map is full-bleed (`#map` is `100vw` / `100vh`). There is **no** fixed header and **no left icon rail**. Chrome is two floating cards plus a slim full-width footer (~32px): intro top-left (`.chrome-stack`, 14px inset) and the legend bottom-left, above the footer. Zoom `+/-` stays at the bottom-right, just above the footer. The first camera is a Brazil overview (`fitBounds` of `[[-74, -34], [-32, 6]]`); search still uses the RJ bbox.
+The map is full-bleed (`#map` is `100vw` / `100vh`). There is **no** fixed header and **no left icon rail**. Desktop chrome is **one floating panel** top-left (`.chrome-stack` → `.intro-card`, 14px inset) plus a slim full-width footer (~32px). The old bottom-left legend card is gone — the legend moved into the panel, so the map's lower-left quadrant stays clear. Zoom `+/-` stays at the bottom-right, just above the footer. The first camera uses the Brazil bounds `[[-74, -34], [-32, 6]]`; narrow portrait screens keep that center at zoom 3.01 so the z3 dots remain visible. Search still uses the RJ bbox.
 
-## Left card (`.intro-card`)
+## The panel (`.intro-card`)
 
-White rounded card, top-left. Title + explainer + divider + search (Arquivo da Violência layout).
+White rounded card, top-left, story-first — the mobile sheet's reading order applied to desktop:
 
-The product title (`h1.intro-title` and the page `<title>`) is **Onde o Brasil mora**. It is product-level so later views can share the same name. The explainer (`p.intro-explainer`) is:
+1. **h1 with the active lens**: `Onde o Brasil mora por Raça/Renda` (`#intro-title`, rewritten live by `setView`, same "por <label>" pattern as the mobile sheet title; Óbitos would follow the same pattern when un-hidden).
+2. **Hero scale line** (`#dot-scale`, ~15px semibold): `1 ponto = N unidades`, updated on zoom and prefixed with filter state exactly like the sheet headline (`Mostrando: Parda · …` when soloed, `Filtro: k de n categorias · …` for partial sets). It was an 11px footnote in the old legend card; it is the number that keeps the map honest, so it leads.
+3. **Raça / Renda** switcher (view stored as `dotmap-view`; switching does not move the camera; Óbitos hidden — see the views note at the top).
+4. Explainer.
+5. **Legend rows** (toggle + solo, race order parda → branca → preta → indígena → amarela). On short viewports (e.g. 1366×768) **only this list scrolls** (`overflow-y: auto` + flex `min-height: 0`), so the panel never overflows the viewport.
+6. **Docked stats slot** (`#panel-stats`) + a quiet hint (`Clique no mapa para fixar os detalhes aqui`) — see hover/click below.
+
+Search is **not** inside the panel: the geocoder floats as a white pill **immediately to the right of the panel, top-aligned** (`#desk-search`, anchored to the stack with `left: calc(100% + 12px)` so it tracks the card width). Suggestions drop over the map, never clipped by the card.
+
+The page `<title>` stays the plain **Onde o Brasil mora** (tab labels should not churn on view switch); only the h1 carries the lens suffix. The explainer (`p.intro-explainer`) is:
 
 **Cada ponto é um grupo de pessoas. A cor é a raça declarada no Censo Demográfico 2022 (IBGE). O número de pessoas por ponto muda com o zoom.**
 
-Do not say “um ponto por pessoa”: one dot is N people and N changes with zoom. Do not restore the old h1 “Distribuição Racial no Brasil” (too close to Pata’s 2015 *Mapa Racial do Brasil*). Future views rewrite the explanation, not the h1.
+Do not say “um ponto por pessoa”: one dot is N units and N changes with zoom. Do not restore the old h1 “Distribuição Racial no Brasil” (too close to Pata’s 2015 *Mapa Racial do Brasil*). The income and mortality views rewrite the explanation and swap the h1's `por <label>` suffix; the product name before “por” never changes.
 
-Search sits **inside** this card, powered by [`mapbox-gl-geocoder`](https://github.com/mapbox/mapbox-gl-geocoder) v5 against Mapbox Temporary Geocoding — the same token as the basemap, no Google key. Placeholder: **Busque por cidade, bairro, estado ou CEP**. Results are limited to Brazil and to an RJ bounding box (`[-44.89, -23.37, -40.75, -20.76]`) with proximity to Rio, because the dots only exist in that recorte. Selecting a result `fitBounds` the map; there is no persistent pin so the marker would not compete with the race-dot colors. Full Brazilian CEPs (`XXXXX-XXX`) are resolved via [BrasilAPI](https://brasilapi.com.br/) (`/cep/v2`) because Mapbox postcode matching is weak for that format; city, bairro, and address stay on Mapbox. CEPs outside RJ are dropped.
+Search sits in the floating pill **to the right of the panel** on desktop (on phones the same geocoder pins to the top of the screen — see the mobile chrome section), powered by [`mapbox-gl-geocoder`](https://github.com/mapbox/mapbox-gl-geocoder) v5 against Mapbox Temporary Geocoding — the same token as the basemap, no Google key. Placeholder: **Busque por cidade, bairro, estado ou CEP**. The existing search remains temporarily limited to an RJ bounding box (`[-44.89, -23.37, -40.75, -20.76]`) with proximity to Rio; this limitation is independent of thematic coverage. Selecting a result `fitBounds` the map; there is no persistent pin. Full Brazilian CEPs (`XXXXX-XXX`) are resolved via [BrasilAPI](https://brasilapi.com.br/) (`/cep/v2`). CEPs outside RJ are dropped.
 
-Do not restore a standalone search chrome or a Raça chip.
+Do not restore a standalone search chrome.
 
-## Legend card (`.detail-card`)
+## Hover, click, and the stats surfaces
 
-White rounded card, pinned **bottom-left** (`position: fixed; left: 14px`), sitting above the slim footer (`bottom: calc(var(--footer-height) + 14px)`). Compact (~268px wide). It is **not** stacked under the intro card. It holds:
+Hover numbers live in the Mapbox **popup on the map** following the cursor (município below zoom 10, setor from zoom 10). Raça shows shares and population; Renda shows represented households, median, and mean; Óbitos (hidden) would show counts/shares by age with no sex breakdown. The popup sits at `z-index: 115` — above the fixed panel (114) — so hovering near the left edge is not hidden behind it.
 
-1. The five race rows (the filter — see [Interactive Race Filter](#interactive-race-filter)).
-2. `1 ponto = N pessoas` (existing zoom scale).
+A **click** on a polygon (desktop) additionally **docks the same numbers into the panel's bottom slot** (`#panel-stats`), mirroring the mobile tap dock: the reading stays put for comparison while the mouse keeps hovering elsewhere. An empty-map click, the **✕**, or a view switch dismisses it; it deliberately survives `clearHoverState` (mouseout/empty hover), pans, and zooms. All three surfaces (popup, panel slot, mobile dock) are fed by one query, `detailsAtPoint()`.
 
-Hover numbers live in the Mapbox **popup on the map** (município below zoom 10, setor from zoom 10): name, race shares, and população. The dark hover outline stays on the map. The legend card does not repeat those numbers.
+On phones (≤640px) a **tap** on a polygon runs the same lookup, but the result renders in the **docked stats card** (`#stats-dock`) fixed above the peeked sheet — never under the finger, never off-screen. The tapped polygon stays highlighted; **✕** or a tap on empty map/water dismisses. While the dock is open the chip rail hides (they share the same strip). `mousemove` is ignored on the phone layout so the synthesized mouse events of a tap cannot bypass the sheet-collapse behavior below.
 
 There is no logo. Zoom is the Mapbox `NavigationControl` at the bottom-right; the public page has no on-screen “Zoom level: N” badge. The public URL slug remains `brazildots`.
 
-On ≤640px the intro card can shrink so it does not collide with the bottom-left legend. Solo buttons stay visible on that breakpoint.
+## Mobile chrome (≤640px): the bottom sheet
+
+On phones the chrome follows the **Waze grammar** (user-provided reference): the map owns the screen and every piece of UI lives in **one bottom sheet** plus a few floating on-map controls. The desktop panel and footer are `display: none` on this breakpoint — hidden, not restyled — and all of the mobile chrome sits in the `.m-chrome` block of `index.html` (hidden on desktop). No libraries: the sheet is pointer events + CSS transforms.
+
+### Sheet states (`#sheet`)
+
+The sheet snaps between three `translateY` offsets, recomputed from live heights on resize/rotation:
+
+| State | What shows | How you get there |
+|---|---|---|
+| **peek** | drag handle + **Onde o Brasil mora por Raça/Renda** (title carries the active lens, updated live on view switch; label matches the switcher) + live `1 ponto = N unidades` line | drag down, tap header, or tap the map while open |
+| **half** (~52vh, ≤400px) | + Raça/Renda switcher, explainer | drag, or tap header from peek |
+| **full** (92dvh) | + 44px legend rows with **S** solo buttons, **credits** | drag up |
+
+- **First visit opens at half** so the story (title, scale, lens, explainer) shows once; afterwards the last snap state wins for the session (`sessionStorage` key `dotmap-sheet-state`).
+- Drag only works from the **header** (handle + title strip, `touch-action: none`); the content area keeps native scrolling, which only unlocks in the full state (`body.m-sheet-full`) so scroll and drag never fight.
+- Tapping the **map** while the sheet is at half/full collapses it to peek first; details come on the next tap.
+- The product name is never hidden — it is the first line of every state, suffixed with the active view (`#sheet-title`, e.g. **Onde o Brasil mora por Renda**). The desktop `h1` (`#intro-title`) uses the same `por <label>` suffix; only the page `<title>` stays the plain product name.
+
+### Chip rail (`#chip-rail`, peek state only)
+
+The always-visible legend while exploring: one pill chip per category of the active view (swatch + name, ≥44px tall, horizontal scroll for Renda's 7). **Tap toggles** the category; **long-press (500ms) solos** it (context menu suppressed; a moving finger cancels the press so rail scrolling works). The rail hides when the sheet expands (the full legend list takes over) or while a stats card is docked. The sheet headline reports filters so the map never lies silently: `Mostrando: Parda · …` when soloed, `Filtro: k de n categorias · …` for partial sets.
+
+### Floating controls
+
+- **Top search bar** (`#m-search-bar`): the geocoder pins to the top of the screen as a floating white pill (Waze's map screen does the same), fixed to the viewport with `--chrome-inset` margins and `safe-area-inset-top`. Input is 44px tall; suggestions drop over the map, never clipped by the sheet. It sits **above** the sheet in z-order so search stays reachable in every snap state — it used to be buried inside the sheet's full state. Nothing else is top-anchored in production; the localhost-only dev chip may overlap the bar's right edge and that is fine — the dev HUD is a tool, not part of the design.
+- **No zoom buttons, no recenter FAB on phones.** Pinch/double-tap zoom the map; on-screen buttons would only cover dots. The NavigationControl still mounts (desktop uses it) but is `display: none` on ≤640px, which also removes it from hit-testing — touches pass straight to the map. Mapbox attribution (compact ⓘ, bottom-right) stays, lifted above the chip rail. `jumpToBrazilOverview` remains for startup and the dev HUD jump `1`.
+- **Docked stats card** — see the popup section above.
+
+### Everything else
+
+- **No mobile footer.** Credits (`Dados: IBGE · Censo Demográfico 2022 · GitHub · Carabetta.xyz · © 2026`) live at the end of the sheet's full state; Mapbox attribution stays on-map.
+- **Viewport & safe areas:** meta viewport declares `width=device-width` and `viewport-fit=cover`; the search bar, sheet header, rail, dock, and dev HUD pad with `env(safe-area-inset-*)`. `#map` uses a `100dvh` fallback because iOS Safari's collapsing toolbar makes `100vh` taller than the visible viewport. Dependent chrome positions key off the CSS variable `--m-peek-h` (the measured sheet-header height, set by JS).
+- **One geocoder instance** moves between the desktop pill (right of the panel) and the mobile top bar (`placeGeocoder()` re-parents it on breakpoint change); two instances would double Mapbox requests.
+- **Dev HUD:** still injected only on loopback hosts — a real phone hitting carabetta.xyz never sees it. On ≤640px the chip and the panel compact (`min(300px, 100vw - 20px)`, 45vh max height).
 
 # Local dev panel
 
 A compact HUD is injected only on loopback hosts (`localhost`, `127.0.0.1`, `::1`, `*.localhost`). Production (`carabetta.xyz`) never gets the toggle or the panel.
 
 - Off by default. Toggle with the top-right **dev** button or `D` / `` ` `` (ignored while typing in the search field). `sessionStorage` key `dotmap-dev-panel` keeps it open across refresh.
-- Live fields, updated on `move` / `zoom`: pessoas/ponto (same `peoplePerDot` table as the legend and `makefiles.sh`), center, bbox, hover layer (`município` below zoom 10, `setor` from 10), and **fonte** (tile-generation unit from `makefiles.sh`: setor agrupado at z3–6, setor at z7–14, setor overzoom at 15). Fonte is not hover.
+- Live fields, updated on `move` / `zoom`: unidades/ponto (active-view table), center, bbox, hover layer (`município` below zoom 10, `setor` from 10), and **fonte** (tile-generation unit from `makefiles.sh`: setor agrupado at z3–6, setor at z7–14, setor overzoom at 15). Fonte is not hover.
 - **Zoom** and **raio** are editable (localhost only). Zoom is a slider + number (2–15) that calls `map.setZoom`. Raio is a **multiplier** (0.5×–3×, default 1) on top of the coded interpolate (so the z13 ×1.5 bump stays). `reset` returns the multiplier to 1. The effective px is shown next to the control. Multiplier is stored in `sessionStorage` key `dotmap-dev-radius-mult`. Keyboard shortcuts ignore these inputs the same way as the geocoder.
-- **Cores** (localhost only): a select of 5-hue presets mapped to `branca`, `preta`, `amarela`, `parda`, `indigena`. Applying a palette updates the points `circle-color` match and the legend swatches. Presets: **Atual** (product default — ColorBrewer Set1 hues permuted from HUD test), **Dark2** (ColorBrewer), **Set1** (ColorBrewer, unpermuted), **Okabe–Ito** (colorblind-safer; skips `#F0E442` because it vanishes on light-v10), **Print** (high-contrast), **Terra** (muted earth tones). **permutar** rotates assignment (each race takes the next of the same 5 hues; 5 steps, not 5! buttons). **embaralhar** shuffles those 5 hues once. **reset** restores the selected palette’s default mapping. Compact swatch + hex list shows the current key → color. Stored in `sessionStorage` as `dotmap-dev-palette`, `dotmap-dev-permute` (rotation index 0–4), and `dotmap-dev-hues` (working order after shuffle). Production (`carabetta.xyz`) never loads this UI or these keys.
+- **Cores** (localhost, Raça only): a select of 5-hue presets mapped to `branca`, `preta`, `amarela`, `parda`, `indigena`. The controls are hidden in Renda and Óbitos.
 - Camera jumps (localhost only, ignored while typing in search): **1** Brasil (`fitBounds` of the default country bbox), **2** Rio center `[-43.1729, -22.9068]` at zoom **15**. Same actions as the two HUD buttons.
 - Monospace overlay, not a product card. All logic stays in `index.html`. The panel scrolls if the color block would otherwise cover zoom/footer.
 
 # Credits
 
-Credits sit in `.map-footer`, a slim full-width bar (~32px, wraps on narrow screens), not in either card and not as a second explainer. “Dados: IBGE” links to the official [Agregados por Setores Censitários 2022](https://ftp.ibge.gov.br/Censos/Censo_Demografico_2022/Agregados_por_Setores_Censitarios/) FTP collection (the source documented in [`fontes.md`](fontes.md)), not the IBGE homepage. “Censo Demográfico 2022” links to the [Censo 2022 dataset on Base dos Dados](https://basedosdados.org/dataset/08a1546e-251f-4546-9fe0-b1e6ab2b203d) (the 2022-specific page, not the older `br-ibge-censo-demografico` collection). Then: [GitHub](https://github.com/JoaoCarabetta/dotmap) (this repo), [Carabetta.xyz](https://carabetta.xyz), and `© 2026 Carabetta.xyz`.
+On desktop, credits sit in `.map-footer`, a slim full-width bar (~32px), not in either card and not as a second explainer. On ≤640px the footer is hidden and the same credits render as `.sheet-credits` at the end of the bottom sheet's full state (Mapbox attribution stays on the map). “Dados: IBGE” links to the official [Agregados por Setores Censitários 2022](https://ftp.ibge.gov.br/Censos/Censo_Demografico_2022/Agregados_por_Setores_Censitarios/) FTP collection (the source documented in [`fontes.md`](fontes.md)), not the IBGE homepage. “Censo Demográfico 2022” links to the [Censo 2022 dataset on Base dos Dados](https://basedosdados.org/dataset/08a1546e-251f-4546-9fe0-b1e6ab2b203d) (the 2022-specific page, not the older `br-ibge-censo-demografico` collection). Then: [GitHub](https://github.com/JoaoCarabetta/dotmap) (this repo), [Carabetta.xyz](https://carabetta.xyz), and `© 2026 Carabetta.xyz`.

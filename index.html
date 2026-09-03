@@ -3,7 +3,8 @@
 <head>
     <meta charset="utf-8">
     <title>Onde o Brasil mora</title>
-    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <!-- viewport-fit=cover lets the map paint under the notch; safe-area insets keep the chrome out of it. -->
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.js"></script>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.css" rel="stylesheet">
     <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.3/mapbox-gl-geocoder.min.js"></script>
@@ -14,8 +15,6 @@
             --chrome-font: system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
             --chrome-title-font: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif;
             --chrome-card-width: 392px;
-            /* Legend card is narrower than the intro card so it does not dominate the map. */
-            --detail-card-width: 268px;
             --chrome-shadow: 0 1px 4px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.1);
             /* Slim attribution strip, not the old 60px bar. */
             --footer-height: 32px;
@@ -35,14 +34,22 @@
             inset: 0;
             width: 100vw;
             height: 100vh;
+            /* iOS Safari's collapsing toolbar makes 100vh taller than the visible
+               viewport; dvh tracks it so the footer never hides the attribution. */
+            height: 100dvh;
         }
 
-        /* Intro stays top-left; legend is pinned separately so it does not stack under it. */
+        /* ONE story-first panel top-left (the mobile sheet's reading order
+           applied to desktop): title → hero scale → switcher → explainer →
+           search → legend → docked stats. The old bottom-left legend card is
+           gone, so the map's lower-left quadrant is clear again. */
         .chrome-stack {
             position: fixed;
             top: var(--chrome-inset);
             left: var(--chrome-inset);
             z-index: 114;
+            display: flex;
+            flex-direction: column;
             max-height: calc(100vh - var(--footer-height) - 28px);
             pointer-events: none;
         }
@@ -51,34 +58,22 @@
             pointer-events: auto;
         }
 
-        /* Shared floating-card chrome (Arquivo da Violência: white, rounded, shadowed). */
-        .intro-card,
-        .detail-card {
+        /* Floating-card chrome (Arquivo da Violência: white, rounded, shadowed).
+           Flex column + min-height 0 so the LEGEND is the only part that scrolls
+           on short laptops — the panel itself never overflows the viewport. */
+        .intro-card {
             position: relative;
             box-sizing: border-box;
-            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            width: min(var(--chrome-card-width), calc(100vw - 28px));
+            padding: 20px 22px 16px;
+            border-radius: 16px;
             background: #fff;
             box-shadow: var(--chrome-shadow);
             color: #202124;
             font-family: var(--chrome-font);
-        }
-
-        .intro-card {
-            width: min(var(--chrome-card-width), calc(100vw - 28px));
-            flex: 0 0 auto;
-            padding: 20px 22px 18px;
-            border-radius: 16px;
-        }
-
-        /* Bottom-left, same inset as intro, sitting above the slim footer. */
-        .detail-card {
-            position: fixed;
-            left: var(--chrome-inset);
-            bottom: calc(var(--footer-height) + var(--chrome-inset));
-            z-index: 114;
-            width: min(var(--detail-card-width), calc(100vw - 28px));
-            padding: 12px 14px 10px;
-            border-radius: 12px;
         }
 
         /* Serif title so the left card reads like the reference, not a UI toolbar. */
@@ -92,46 +87,91 @@
         }
 
         .intro-explainer {
-            margin: 10px 0 0;
+            margin: 12px 0 0;
             font-size: 13px;
             font-weight: 400;
             line-height: 1.5;
             color: #5f6368;
         }
 
-        .intro-divider {
-            height: 1px;
-            margin: 16px 0;
-            border: 0;
-            background: #e8eaed;
+        /* Hero line right under the title: the number that keeps the map
+           honest was a footnote in the old legend card; now it leads. */
+        .dot-scale {
+            margin: 4px 0 0;
+            font: 600 15px/1.4 var(--chrome-font);
+            color: #202124;
         }
 
-        /* Geocoder sits inside the card: inset gray field, no second floating pill. */
-        .intro-search .mapboxgl-ctrl-geocoder {
+        .view-switcher {
+            display: flex;
+            gap: 4px;
+            margin-top: 14px;
+            padding: 3px;
+            border-radius: 9px;
+            background: #f1f3f4;
+        }
+
+        .view-switcher button {
+            flex: 1;
+            min-width: 0;
+            padding: 7px 8px;
+            border: 0;
+            border-radius: 7px;
+            background: transparent;
+            color: #5f6368;
+            font: 600 12px/1 var(--chrome-font);
+            cursor: pointer;
+        }
+
+        .view-switcher button[aria-pressed="true"] {
+            background: #fff;
+            color: #202124;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+        }
+
+        .coverage-note {
+            margin: 7px 0 0;
+            color: #5f6368;
+            font: 600 11px/1.3 var(--chrome-font);
+        }
+
+        /* Desktop search: floating white pill to the RIGHT of the panel, top
+           aligned. left: 100% anchors it to the card's right edge (it tracks
+           the card width, including the 860px shrink), so the panel keeps a
+           clean story order with no search hole inside it. Suggestions drop
+           over the map — the stack has no overflow clipping. */
+        .desk-search {
+            position: absolute;
+            top: 0;
+            left: calc(100% + 12px);
+            width: 320px;
+        }
+
+        .desk-search .mapboxgl-ctrl-geocoder {
             width: 100%;
             max-width: 100%;
-            box-shadow: none;
             border: none;
             border-radius: 22px;
-            background: #f1f3f4;
+            background: #fff;
+            box-shadow: var(--chrome-shadow);
             font-family: var(--chrome-font);
         }
 
-        .intro-search .mapboxgl-ctrl-geocoder--input {
-            height: 42px;
+        .desk-search .mapboxgl-ctrl-geocoder--input {
+            height: 44px;
             padding-left: 42px;
             background: transparent;
             font-size: 14px;
             color: #202124;
         }
 
-        .intro-search .mapboxgl-ctrl-geocoder--icon-search {
-            top: 11px;
+        .desk-search .mapboxgl-ctrl-geocoder--icon-search {
+            top: 12px;
             left: 12px;
             fill: #80868b;
         }
 
-        .intro-search .suggestions {
+        .desk-search .suggestions {
             z-index: 160;
         }
 
@@ -217,13 +257,70 @@
             color: #1a73e8;
         }
 
-        .dot-scale {
-            font-size: 11px;
-            color: #5f6368;
-            margin: 6px 0 0;
+        /* Inside the panel only the legend scrolls (short laptops): everything
+           above it is the story and must stay visible. The sheet's #m-legend
+           shares .legend-races, so this is scoped to the desktop card. */
+        .intro-card .legend-races {
+            margin-top: 14px;
+            overflow-y: auto;
+            min-height: 96px; /* ~3 rows stay visible before stats/hint clip */
+            flex: 0 1 auto;
         }
 
-        /* Map tooltip follows the cursor; the legend card is filter + scale only. */
+        /* Click-to-dock stats slot at the panel's bottom. Hover keeps the
+           cursor popup; this parks the numbers for reading and comparing. */
+        .panel-stats {
+            position: relative;
+            flex: 0 0 auto;
+            margin-top: 12px;
+            padding: 10px 12px 8px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            font-size: 12px;
+        }
+
+        .panel-stats[hidden] {
+            display: none;
+        }
+
+        .panel-stats-close {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 24px;
+            height: 24px;
+            border: none;
+            border-radius: 50%;
+            background: transparent;
+            color: #5f6368;
+            font-size: 13px;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .panel-stats-close:hover {
+            background: #e8eaed;
+        }
+
+        /* Quiet affordance while nothing is docked. */
+        .panel-hint {
+            flex: 0 0 auto;
+            margin: 10px 0 0;
+            font-size: 11px;
+            color: #9aa0a6;
+        }
+
+        .panel-hint[hidden] {
+            display: none;
+        }
+
+        /* Map tooltip follows the cursor; the panel is story + filter + stats.
+           z-index beats the fixed panel (114): hover numbers near the left
+           edge must not hide behind it. */
+        .mapboxgl-popup {
+            z-index: 115;
+        }
+
         .mapboxgl-popup-content {
             background-color: white;
             padding: 5px 8px;
@@ -564,53 +661,378 @@
             text-align: right;
         }
 
+        /* Mobile-only layer (Waze-style bottom sheet). Desktop never renders it. */
+        .m-chrome {
+            display: none;
+        }
+
         @media (max-width: 860px) {
             .intro-card {
                 width: min(340px, calc(100vw - 28px));
             }
-
-            .detail-card {
-                width: min(var(--detail-card-width), calc(100vw - 28px));
-            }
         }
 
-        /* Phone: shrink the intro so it does not collide with the bottom-left legend. */
+        /* Phone chrome (Waze grammar): the map owns the screen; every piece of
+           UI lives in ONE bottom sheet with three snap states (peek/half/full),
+           plus an on-map legend chip rail and a docked stats card. The desktop cards and footer are hidden — not restyled — so the
+           two layouts cannot drift into each other. */
         @media (max-width: 640px) {
-            .intro-title {
-                font-size: 22px;
+            :root {
+                --chrome-inset: 10px;
+                /* Height of the sheet header (handle + title + scale). JS
+                   remeasures it; this fallback keeps CSS sane before that. */
+                --m-peek-h: 96px;
             }
 
-            .intro-explainer {
+            /* Desktop chrome off (the single panel lives in .chrome-stack).
+               Credits move into the sheet's full state; Mapbox's own
+               attribution control stays on the map. */
+            .chrome-stack,
+            .map-footer {
+                display: none;
+            }
+
+            .m-chrome {
+                display: block;
+            }
+
+            /* ---- Bottom sheet ---- */
+            .sheet {
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 118;
+                display: flex;
+                flex-direction: column;
+                height: 92vh;
+                height: 92dvh;
+                background: #fff;
+                border-radius: 18px 18px 0 0;
+                box-shadow: 0 -2px 14px rgba(0, 0, 0, 0.2);
+                /* Rows/solo buttons inherit this; without it they'd fall back
+                   to the browser serif (only the title is intentionally serif). */
+                font-family: var(--chrome-font);
+                color: #202124;
+                /* Pre-JS fallback ≈ peek so a script hiccup never buries the map. */
+                transform: translateY(calc(100% - var(--m-peek-h)));
+                transition: transform 0.22s ease;
+            }
+
+            .sheet.is-dragging {
+                transition: none;
+            }
+
+            /* The header is the grab zone: drag to any state, tap to toggle
+               peek/half. touch-action none so pointermove drives the drag. */
+            .sheet-header {
+                touch-action: none;
+                cursor: grab;
+                padding: 6px 16px 10px;
+                /* Peeked, this strip sits on the home indicator; pad past it. */
+                padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
+            }
+
+            .sheet-handle {
+                width: 36px;
+                height: 4px;
+                margin: 0 auto 8px;
+                border-radius: 2px;
+                background: #dadce0;
+            }
+
+            .sheet-title {
+                margin: 0;
+                font-family: var(--chrome-title-font);
+                font-size: 17px;
+                font-weight: 700;
+                color: #1a1a1a;
+                line-height: 1.2;
+            }
+
+            /* The live scale is the headline number: always visible, even peeked. */
+            .sheet-scale {
+                margin: 2px 0 0;
+                font: 500 12px/1.4 var(--chrome-font);
+                color: #5f6368;
+            }
+
+            .sheet-content {
+                flex: 1;
+                min-height: 0;
+                padding: 0 16px;
+                /* Clipped in peek/half so content cannot fight the drag gesture;
+                   the full state flips this to auto via body class below. */
+                overflow: hidden;
+            }
+
+            body.m-sheet-full .sheet-content {
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+            }
+
+            .m-chrome .view-switcher {
+                margin-top: 2px;
+            }
+
+            /* Switcher buttons grow to touch size only inside the sheet. */
+            .m-chrome .view-switcher button {
+                padding: 13px 8px;
+                font-size: 13px;
+            }
+
+            .sheet-explainer {
+                margin: 12px 0 0;
+                font: 400 12.5px/1.5 var(--chrome-font);
+                color: #5f6368;
+            }
+
+            /* ---- Top search bar ---- */
+            /* Waze's map screen pins search to the top; same move here. The
+               single geocoder instance is re-parented into this slot on phones
+               (placeGeocoder), so it stays reachable in every sheet state —
+               it used to be buried inside the sheet's full state. */
+            .m-search-bar {
+                position: fixed;
+                top: calc(var(--chrome-inset) + env(safe-area-inset-top, 0px));
+                left: calc(var(--chrome-inset) + env(safe-area-inset-left, 0px));
+                right: calc(var(--chrome-inset) + env(safe-area-inset-right, 0px));
+                /* Above the sheet (118): on short phones the full sheet's top
+                   edge reaches the bar, and search must win that overlap. */
+                z-index: 119;
+            }
+
+            /* Floating white pill over the map (unlike the inset gray field
+               inside the desktop card) so it reads as its own control. */
+            .m-search-bar .mapboxgl-ctrl-geocoder {
+                width: 100%;
+                max-width: 100%;
+                border: none;
+                border-radius: 22px;
+                background: #fff;
+                box-shadow: var(--chrome-shadow);
+                font-family: var(--chrome-font);
+            }
+
+            .m-search-bar .mapboxgl-ctrl-geocoder--input {
+                height: 44px;
+                padding-left: 42px;
+                background: transparent;
+                font-size: 14px;
+                color: #202124;
+            }
+
+            .m-search-bar .mapboxgl-ctrl-geocoder--icon-search {
+                top: 12px;
+                left: 12px;
+                fill: #80868b;
+            }
+
+            /* Results drop over the map below the pill; nothing clips them
+               because the bar is fixed to the viewport, not inside the sheet. */
+            .m-search-bar .suggestions {
+                z-index: 160;
+            }
+
+            .sheet-legend {
+                margin-top: 6px;
+            }
+
+            .m-chrome .race-row-toggle {
+                /* Touch rows: 44px minimum target. */
+                height: 44px;
+                font-size: 13px;
+            }
+
+            /* No hover on touch: solo is always visible and touch-sized. */
+            .m-chrome .solo-button {
+                visibility: visible;
+                width: 34px;
+                height: 34px;
+                border-radius: 6px;
+                font-size: 12px;
+                line-height: 32px;
+            }
+
+            .sheet-credits {
+                margin: 14px 0 10px;
+                font: 400 11px/1.6 var(--chrome-font);
+                color: #5f6368;
+            }
+
+            .sheet-credits a {
+                color: #5f6368;
+            }
+
+            /* ---- Legend chip rail (peek state only) ---- */
+            /* The rail IS the legend while exploring: swatch + name per chip,
+               tap toggles, long-press solos. It hides when the sheet expands
+               (the full legend list takes over) or a stats card is docked. */
+            .chip-rail {
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: calc(var(--m-peek-h) + 10px);
+                z-index: 116;
+                display: flex;
+                gap: 8px;
+                padding: 4px 10px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                transition: opacity 0.15s ease;
+            }
+
+            .chip-rail::-webkit-scrollbar {
+                display: none;
+            }
+
+            body.m-sheet-half .chip-rail,
+            body.m-sheet-full .chip-rail,
+            body.m-dock-open .chip-rail {
+                opacity: 0;
+                pointer-events: none;
+            }
+
+            .legend-chip {
+                display: inline-flex;
+                align-items: center;
+                gap: 7px;
+                flex: 0 0 auto;
+                height: 44px;
+                padding: 0 14px;
+                border: none;
+                border-radius: 22px;
+                background: #fff;
+                box-shadow: var(--chrome-shadow);
+                font: 600 13px/1 var(--chrome-font);
+                color: #202124;
+                cursor: pointer;
+                /* Long-press = solo: suppress text selection / iOS callout. */
+                user-select: none;
+                -webkit-user-select: none;
+                -webkit-touch-callout: none;
+            }
+
+            .legend-chip .race-swatch {
+                width: 11px;
+                height: 11px;
+                flex: 0 0 11px;
+            }
+
+            .legend-chip.is-off {
+                opacity: 0.45;
+            }
+
+            /* ---- Docked stats card (replaces the popup on touch) ---- */
+            /* Fixed position above the peek sheet: never under the finger,
+               never off-screen; right gutter keeps the attribution ⓘ clear. */
+            .stats-dock {
+                position: fixed;
+                left: var(--chrome-inset);
+                right: calc(64px + env(safe-area-inset-right, 0px));
+                bottom: calc(var(--m-peek-h) + 10px);
+                z-index: 117;
+                max-width: 340px;
+                padding: 10px 12px;
+                border-radius: 12px;
+                background: #fff;
+                box-shadow: var(--chrome-shadow);
+                font-family: var(--chrome-font);
                 font-size: 12px;
             }
 
-            .intro-card {
-                max-height: 34vh;
+            .stats-dock[hidden] {
+                display: none;
             }
 
-            /* Touch has no hover; solo would be unreachable if it stayed hidden. */
-            .solo-button {
-                visibility: visible;
+            .stats-dock-close {
+                position: absolute;
+                top: 2px;
+                right: 2px;
+                width: 34px;
+                height: 34px;
+                border: none;
+                border-radius: 50%;
+                background: transparent;
+                color: #5f6368;
+                font-size: 17px;
+                line-height: 1;
+                cursor: pointer;
+            }
+
+            /* ---- Map controls on phones ---- */
+            /* No zoom buttons and no recenter FAB on touch: pinch/double-tap
+               zoom the map, so on-screen buttons would only cover dots. The
+               NavigationControl still mounts (desktop uses it); hiding it here
+               also removes it from hit-testing, so touches pass to the map.
+               Mapbox attribution (ⓘ) stays, lifted above the chip rail. */
+            .mapboxgl-ctrl-bottom-right .mapboxgl-ctrl-group {
+                display: none;
+            }
+
+            .mapboxgl-ctrl-bottom-right {
+                right: calc(10px + env(safe-area-inset-right, 0px));
+                bottom: calc(var(--m-peek-h) + 62px);
+            }
+
+            .mapboxgl-ctrl-bottom-left {
+                bottom: calc(var(--m-peek-h) + 62px);
+            }
+
+            /* Localhost-only HUD: compact so local testing keeps the map clear.
+               Production never injects it. */
+            .dev-toggle {
+                top: calc(var(--chrome-inset) + env(safe-area-inset-top, 0px));
+                right: calc(var(--chrome-inset) + env(safe-area-inset-right, 0px));
+                padding: 2px 6px;
+                font-size: 10px;
+            }
+
+            .dev-panel {
+                top: calc(var(--chrome-inset) + env(safe-area-inset-top, 0px) + 26px);
+                right: calc(var(--chrome-inset) + env(safe-area-inset-right, 0px));
+                width: min(300px, calc(100vw - 20px));
+                max-height: 45vh;
             }
         }
     </style>
 </head>
 <body>
 <div id="map"></div>
-<!-- Intro stays top-left; legend is a sibling pinned to the bottom-left. -->
+<!-- Desktop chrome is ONE story-first panel (mobile-sheet lesson applied):
+     title with the active lens, hero scale line, switcher, explainer, search,
+     legend, and a docked stats slot — instead of two cards pinning two map
+     corners. Mobile (≤640px) hides the whole stack and uses the sheet. -->
 <div class="chrome-stack" id="chrome-stack">
 <aside class="intro-card" id="intro-card" aria-label="Sobre o mapa">
-    <h1 class="intro-title">Onde o Brasil mora</h1>
-    <p class="intro-explainer">Cada ponto é um grupo de pessoas. A cor é a raça declarada no Censo Demográfico 2022 (IBGE). O número de pessoas por ponto muda com o zoom.</p>
-    <hr class="intro-divider">
-    <div class="intro-search" id="search-slot"></div>
-</aside>
-</div>
-<aside class="detail-card" id="detail-card" aria-label="Legenda">
+    <h1 class="intro-title" id="intro-title">Onde o Brasil mora por Raça</h1>
+    <!-- The hero line: the one number that keeps the map honest. Reports
+         filters too ("Mostrando: Parda · …"), same contract as the sheet. -->
+    <p class="dot-scale" id="dot-scale">1 ponto = 4.500 pessoas</p>
+    <!-- Óbitos is hidden for now (tiles/pipeline/config stay); to un-hide,
+         restore the button here and in #m-view-switcher and drop it from
+         HIDDEN_VIEWS in the script. -->
+    <div class="view-switcher" id="view-switcher" role="group" aria-label="Visualização">
+        <button type="button" data-view="race" aria-pressed="true">Raça</button>
+        <button type="button" data-view="income" aria-pressed="false">Renda</button>
+    </div>
+    <p class="intro-explainer" id="intro-explainer">Cada ponto é um grupo de pessoas. A cor é a raça declarada no Censo Demográfico 2022 (IBGE). O número de pessoas por ponto muda com o zoom.</p>
+    <p class="coverage-note" id="coverage-note" hidden></p>
+    <!-- Rows follow population size, descending (Censo 2022), same as VIEW_CONFIGS.
+         On short viewports only this list scrolls, so the panel never overflows. -->
     <ul class="legend-races" id="legend-races">
-        <li class="race-row" data-race="branca">
+        <li class="race-row" data-race="parda">
             <button type="button" class="race-row-toggle" role="checkbox" aria-checked="true">
                 <!-- ColorBrewer Set1, permuted from HUD test; holds contrast on light-v10 -->
+                <span class="race-swatch" style="background-color: #e41a1c;"></span>
+                <span class="race-row-label">Parda</span>
+            </button>
+            <button type="button" class="solo-button" title="Mostrar só esta categoria" aria-label="Mostrar só Parda">S</button>
+        </li>
+        <li class="race-row" data-race="branca">
+            <button type="button" class="race-row-toggle" role="checkbox" aria-checked="true">
                 <span class="race-swatch" style="background-color: #4daf4a;"></span>
                 <span class="race-row-label">Branca</span>
             </button>
@@ -623,20 +1045,6 @@
             </button>
             <button type="button" class="solo-button" title="Mostrar só esta categoria" aria-label="Mostrar só Preta">S</button>
         </li>
-        <li class="race-row" data-race="amarela">
-            <button type="button" class="race-row-toggle" role="checkbox" aria-checked="true">
-                <span class="race-swatch" style="background-color: #377eb8;"></span>
-                <span class="race-row-label">Amarela</span>
-            </button>
-            <button type="button" class="solo-button" title="Mostrar só esta categoria" aria-label="Mostrar só Amarela">S</button>
-        </li>
-        <li class="race-row" data-race="parda">
-            <button type="button" class="race-row-toggle" role="checkbox" aria-checked="true">
-                <span class="race-swatch" style="background-color: #e41a1c;"></span>
-                <span class="race-row-label">Parda</span>
-            </button>
-            <button type="button" class="solo-button" title="Mostrar só esta categoria" aria-label="Mostrar só Parda">S</button>
-        </li>
         <li class="race-row" data-race="indigena">
             <button type="button" class="race-row-toggle" role="checkbox" aria-checked="true">
                 <span class="race-swatch" style="background-color: #984ea3;"></span>
@@ -644,31 +1052,51 @@
             </button>
             <button type="button" class="solo-button" title="Mostrar só esta categoria" aria-label="Mostrar só Indígena">S</button>
         </li>
+        <li class="race-row" data-race="amarela">
+            <button type="button" class="race-row-toggle" role="checkbox" aria-checked="true">
+                <span class="race-swatch" style="background-color: #377eb8;"></span>
+                <span class="race-row-label">Amarela</span>
+            </button>
+            <button type="button" class="solo-button" title="Mostrar só esta categoria" aria-label="Mostrar só Amarela">S</button>
+        </li>
     </ul>
-    <p class="dot-scale" id="dot-scale">1 ponto = 24.000 pessoas</p>
+    <!-- Click-to-dock stats (mirrors the mobile tap dock): hover keeps the
+         cursor popup, a click parks the same numbers here so they can be read
+         and compared without chasing the mouse. ✕ or an empty-map click closes. -->
+    <div class="panel-stats" id="panel-stats" hidden>
+        <button type="button" class="panel-stats-close" id="panel-stats-close" aria-label="Fechar detalhes">✕</button>
+        <div class="panel-stats-body" id="panel-stats-body"></div>
+    </div>
+    <p class="panel-hint" id="panel-hint">Clique no mapa para fixar os detalhes aqui</p>
 </aside>
+<!-- Desktop search: floating pill immediately to the RIGHT of the panel, top
+     aligned with it. Anchored to .chrome-stack (left: 100%) so it tracks the
+     card width automatically. placeGeocoder() re-parents the single geocoder
+     here on desktop and to #m-search-bar on phones. -->
+<div class="desk-search" id="desk-search" role="search" aria-label="Busca de lugares"></div>
+</div>
 <!-- Hidden template cloned into the Mapbox popup so hover numbers follow the cursor. -->
 <div id="tooltip-template" style="display: none;">
     <div class="g-popup-title"><span id="census-tract"></span></div>
     <div class="g-row">
-        <div class="g-row-label">Preta</div>
-        <div class="g-row-pct" id="preta"></div>
+        <div class="g-row-label">Parda</div>
+        <div class="g-row-pct" id="parda"></div>
     </div>
     <div class="g-row">
         <div class="g-row-label">Branca</div>
         <div class="g-row-pct" id="branca"></div>
     </div>
     <div class="g-row">
-        <div class="g-row-label">Amarela</div>
-        <div class="g-row-pct" id="amarela"></div>
-    </div>
-    <div class="g-row">
-        <div class="g-row-label">Parda</div>
-        <div class="g-row-pct" id="parda"></div>
+        <div class="g-row-label">Preta</div>
+        <div class="g-row-pct" id="preta"></div>
     </div>
     <div class="g-row">
         <div class="g-row-label">Indigena</div>
         <div class="g-row-pct" id="indigena"></div>
+    </div>
+    <div class="g-row">
+        <div class="g-row-label">Amarela</div>
+        <div class="g-row-pct" id="amarela"></div>
     </div>
     <div class="g-row g-row-population">
         <div class="g-row-label"><strong>População</strong></div>
@@ -676,19 +1104,69 @@
     </div>
 </div>
 <footer class="map-footer" id="map-footer">
-    Dados: <a href="https://ftp.ibge.gov.br/Censos/Censo_Demografico_2022/Agregados_por_Setores_Censitarios/" target="_blank" rel="noopener noreferrer">IBGE</a><span class="map-footer-sep">·</span>
-    <a href="https://basedosdados.org/dataset/08a1546e-251f-4546-9fe0-b1e6ab2b203d" target="_blank" rel="noopener noreferrer">Censo Demográfico 2022</a><span class="map-footer-sep">·</span>
+    <!-- .footer-extra items hide on phones so the strip stays one line;
+         data source, repo, and Carabetta.xyz credits always remain. -->
+    <span>Dados:&nbsp;<a href="https://ftp.ibge.gov.br/Censos/Censo_Demografico_2022/Agregados_por_Setores_Censitarios/" target="_blank" rel="noopener noreferrer">IBGE</a></span><span class="map-footer-sep">·</span>
+    <span class="footer-extra"><a href="https://basedosdados.org/dataset/08a1546e-251f-4546-9fe0-b1e6ab2b203d" target="_blank" rel="noopener noreferrer">Censo Demográfico 2022</a><span class="map-footer-sep">·</span></span>
     <a href="https://github.com/JoaoCarabetta/dotmap" target="_blank" rel="noopener noreferrer">GitHub</a><span class="map-footer-sep">·</span>
-    <a href="https://carabetta.xyz" target="_blank" rel="noopener noreferrer">Carabetta.xyz</a><span class="map-footer-sep">·</span>
-    © 2026 Carabetta.xyz
+    <a href="https://carabetta.xyz" target="_blank" rel="noopener noreferrer">Carabetta.xyz</a>
+    <span class="footer-extra"><span class="map-footer-sep">·</span>© 2026 Carabetta.xyz</span>
 </footer>
+
+<!-- Mobile-only chrome (≤640px): one bottom sheet replaces intro card, legend
+     card, and footer. Waze grammar: sheet with peek/half/full snap states,
+     legend chips on the map, floating round controls, docked context card.
+     Desktop never shows any of this (.m-chrome is display:none there). -->
+<div class="m-chrome" id="m-chrome">
+    <!-- Search floats at the top of the map on phones (Waze map screen). The
+         single geocoder instance is re-parented here by placeGeocoder(). -->
+    <div class="m-search-bar" id="m-search-bar" role="search" aria-label="Busca de lugares"></div>
+
+    <!-- Always-visible legend while exploring: tap toggles, long-press solos. -->
+    <div class="chip-rail" id="chip-rail" role="group" aria-label="Legenda e filtro de categorias"></div>
+
+    <!-- Tap-for-details lands here (fixed, thumb-reachable), not in a popup
+         under the finger. ✕ or an empty-map tap dismisses. -->
+    <div class="stats-dock" id="stats-dock" hidden>
+        <button type="button" class="stats-dock-close" id="stats-dock-close" aria-label="Fechar detalhes">✕</button>
+        <div class="stats-dock-body" id="stats-dock-body"></div>
+    </div>
+
+    <section class="sheet" id="sheet" role="region" aria-label="Onde o Brasil mora">
+        <!-- Grab zone: drag anywhere here to snap peek/half/full; tap toggles. -->
+        <div class="sheet-header" id="sheet-header">
+            <div class="sheet-handle" aria-hidden="true"></div>
+            <!-- Product name first, then the active lens ("por Raça/Renda/Óbitos",
+                 same label as the switcher): the title is visible in every snap
+                 state, so it must say what the map is showing. -->
+            <p class="sheet-title" id="sheet-title">Onde o Brasil mora por Raça</p>
+            <p class="sheet-scale" id="sheet-scale">1 ponto = 4.500 pessoas</p>
+        </div>
+        <div class="sheet-content" id="sheet-content">
+            <!-- Óbitos hidden here too — the two switchers must always match. -->
+            <div class="view-switcher" id="m-view-switcher" role="group" aria-label="Visualização">
+                <button type="button" data-view="race" aria-pressed="true">Raça</button>
+                <button type="button" data-view="income" aria-pressed="false">Renda</button>
+            </div>
+            <p class="sheet-explainer" id="sheet-explainer">Cada ponto é um grupo de pessoas. A cor é a raça declarada no Censo Demográfico 2022 (IBGE). O número de pessoas por ponto muda com o zoom.</p>
+            <ul class="legend-races sheet-legend" id="m-legend"></ul>
+            <!-- Mobile footer is gone; the credits live here (full state). -->
+            <p class="sheet-credits">
+                Dados: <a href="https://ftp.ibge.gov.br/Censos/Censo_Demografico_2022/Agregados_por_Setores_Censitarios/" target="_blank" rel="noopener noreferrer">IBGE</a> ·
+                <a href="https://basedosdados.org/dataset/08a1546e-251f-4546-9fe0-b1e6ab2b203d" target="_blank" rel="noopener noreferrer">Censo Demográfico 2022</a> ·
+                <a href="https://github.com/JoaoCarabetta/dotmap" target="_blank" rel="noopener noreferrer">GitHub</a> ·
+                <a href="https://carabetta.xyz" target="_blank" rel="noopener noreferrer">Carabetta.xyz</a> ·
+                © 2026 Carabetta.xyz
+            </p>
+        </div>
+    </section>
+</div>
 
 <script>
     mapboxgl.accessToken = 'pk.eyJ1IjoiZXNjcml0b3Jpb2RlZGFkb3MiLCJhIjoiY2t3bWdmcHpjMmJ2cTJucWJ4MGQ1Mm1kbiJ9.4hHJX-1pSevYoBbja7Pq4w';
+
     var map = new mapboxgl.Map({
         container: 'map',
-        // light-v10 keeps land/water, coast, admin lines, and light roads so Brazil is readable.
-        // Symbol/label layers are turned off after load so names do not sit on the dots.
         style: 'mapbox://styles/mapbox/light-v10',
         // Country overview until fitBounds runs; geographic center of continental Brazil.
         center: [-51.9, -14.2],
@@ -701,6 +1179,75 @@
 
     // SW/NE so Norte (Amapá), Sul (RS), Acre, and the Atlantic stay on screen across viewports.
     const BRAZIL_BOUNDS = [[-74, -34], [-32, 6]];
+    const VIEW_STORAGE = 'dotmap-view';
+    const VIEW_CONFIGS = {
+        race: {
+            layer: 'points',
+            property: 'race',
+            label: 'Raça',
+            unit: 'pessoas',
+            explainer: 'Cada ponto é um grupo de pessoas. A cor é a raça declarada no Censo Demográfico 2022 (IBGE). O número de pessoas por ponto muda com o zoom.',
+            // Display order: population size, descending (Censo 2022 — parda and
+            // branca are the two biggest groups). Colors stay glued to the keys.
+            categories: [
+                ['parda', 'Parda', '#e41a1c'],
+                ['branca', 'Branca', '#4daf4a'],
+                ['preta', 'Preta', '#ff7f00'],
+                ['indigena', 'Indígena', '#984ea3'],
+                ['amarela', 'Amarela', '#377eb8']
+            ],
+            perDot: [4500, 2000, 900, 400, 150, 120, 90, 70, 50, 35, 25, 20]
+        },
+        income: {
+            layer: 'points-income',
+            property: 'cat',
+            label: 'Renda',
+            unit: 'domicílios',
+            explainer: 'Cada ponto representa um grupo de domicílios. A cor mostra a faixa da renda mediana mensal das pessoas responsáveis com rendimento no setor censitário (Censo Demográfico 2022, IBGE). O número de domicílios por ponto muda com o zoom.',
+            categories: [
+                ['income_ate_1sm', 'Até 1 SM', '#2166ac'],
+                ['income_1_2sm', '1–2 SM', '#4393c3'],
+                ['income_2_3sm', '2–3 SM', '#92c5de'],
+                ['income_3_5sm', '3–5 SM', '#f4a582'],
+                ['income_5_10sm', '5–10 SM', '#d6604d'],
+                ['income_mais_10sm', 'Mais de 10 SM', '#b2182b'],
+                ['income_sem_dado', 'Sem dado', '#777777']
+            ],
+            perDot: [1500, 700, 300, 130, 50, 40, 30, 24, 17, 12, 8, 7]
+        },
+        deaths: {
+            layer: 'points-deaths',
+            property: 'cat',
+            label: 'Óbitos',
+            unit: 'óbitos',
+            explainer: 'Cada ponto representa um grupo de pessoas falecidas que moravam no setor. A cor mostra a idade ao falecer. Os dados cobrem janeiro de 2019 a julho de 2022 (Censo Demográfico 2022, IBGE). O número de óbitos por ponto muda com o zoom.',
+            categories: [
+                ['death_0_14', '0–14 anos', '#1b9e77'],
+                ['death_15_29', '15–29 anos', '#7570b3'],
+                ['death_30_59', '30–59 anos', '#d95f02'],
+                ['death_60_plus', '60 anos ou mais', '#e7298a'],
+                ['death_age_suppressed', 'Idade suprimida', '#777777']
+            ],
+            perDot: [200, 100, 50, 25, 12, 10, 8, 6, 4, 3, 2, 1]
+        }
+    };
+    // Views that exist in the pipeline/tiles but are hidden from the product
+    // UI for now. setView refuses them and persisted state falls back to race,
+    // so no chrome (switcher, legend, chips, title, scale, stats) can show them.
+    const HIDDEN_VIEWS = new Set(['deaths']);
+    let currentView = 'race';
+    try {
+        const storedView = sessionStorage.getItem(VIEW_STORAGE);
+        if (VIEW_CONFIGS[storedView] && !HIDDEN_VIEWS.has(storedView)) currentView = storedView;
+    } catch (e) { /* private mode */ }
+    const activeCategories = {};
+    Object.keys(VIEW_CONFIGS).forEach(function (view) {
+        activeCategories[view] = new Set(VIEW_CONFIGS[view].categories.map(function (item) { return item[0]; }));
+    });
+
+    // Single source of truth for "is this the phone layout": the same breakpoint
+    // gates the CSS (.m-chrome) and every JS branch (dock vs popup, sheet init).
+    const phoneLayout = window.matchMedia('(max-width: 640px)');
     
     // Bottom-right like Google Maps zoom +/-; compass stays off so the stack is just +/−.
     map.addControl(new mapboxgl.NavigationControl({showCompass: false}), 'bottom-right');
@@ -777,7 +1324,9 @@
             return textDigits === digits || feature.id === 'cep.' + digits;
         }
     });
-    document.getElementById('search-slot').appendChild(geocoder.onAdd(map));
+    // Mount into the desktop pill; placeGeocoder() re-parents to the mobile
+    // top bar when the phone breakpoint matches (and back on resize).
+    document.getElementById('desk-search').appendChild(geocoder.onAdd(map));
 
     // How dots were generated (makefiles.sh), not which polygon hover is active (that flips at 10).
     function tileGeometrySource(zoom) {
@@ -790,25 +1339,11 @@
         return 'setor (overzoom)';
     }
 
-    // Same table as makefiles.sh per_dot_values so legend + HUD match the tiles.
+    // Each theme has its own unit and generation density; the selected table
+    // must match makefiles.sh or the legend would make a false quantitative claim.
     function peoplePerDot(zoom) {
-        switch (parseInt(Number(zoom).toFixed(0), 10)) {
-            case 2:
-            case 3: return 4500;
-            case 4: return 2000;
-            case 5: return 900;
-            case 6: return 400;
-            case 7: return 150;
-            case 8: return 120;
-            case 9: return 90;
-            case 10: return 70;
-            case 11: return 50;
-            case 12: return 35;
-            case 13: return 25;
-            case 14:
-            case 15: return 20;
-            default: return 20;
-        }
+        const z = Math.min(14, Math.max(3, parseInt(Number(zoom).toFixed(0), 10)));
+        return VIEW_CONFIGS[currentView].perDot[z - 3];
     }
 
     // Same stops as the points layer interpolate — one table for paint + HUD.
@@ -861,18 +1396,48 @@
         for (let i = 0; i < CIRCLE_RADIUS_STOPS.length; i += 2) {
             stops.push(CIRCLE_RADIUS_STOPS[i], CIRCLE_RADIUS_STOPS[i + 1] * radiusMultiplier);
         }
-        map.setPaintProperty('points', 'circle-radius', [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            ...stops
-        ]);
+        ['points', 'points-income', 'points-deaths'].forEach(function (layer) {
+            if (!map.getLayer(layer)) return;
+            map.setPaintProperty(layer, 'circle-radius', [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                ...stops
+            ]);
+        });
     }
 
     function updateDotScale() {
-        // Legend copy must track zoom so "1 ponto = N pessoas" matches the visible tiles.
+        // The scale copy tracks both zoom and view because units differ, and
+        // reports the active filter — on both layouts the line is the headline
+        // (panel hero on desktop, sheet subtitle on mobile), so it must not
+        // lie silently when categories are toggled off.
+        const config = VIEW_CONFIGS[currentView];
         const scale = peoplePerDot(map.getZoom());
-        document.getElementById('dot-scale').textContent = `1 ponto = ${scale.toLocaleString()} pessoas`;
+        const base = `1 ponto = ${scale.toLocaleString()} ${config.unit}`;
+        const active = activeCategories[currentView];
+        let prefix = '';
+        if (active.size === 1) {
+            const only = config.categories.find(function (c) { return active.has(c[0]); });
+            if (only) prefix = 'Mostrando: ' + only[1] + ' · ';
+        } else if (active.size < config.categories.length) {
+            prefix = 'Filtro: ' + active.size + ' de ' + config.categories.length + ' categorias · ';
+        }
+        document.getElementById('dot-scale').textContent = prefix + base;
+        const sheetScale = document.getElementById('sheet-scale');
+        if (sheetScale) sheetScale.textContent = prefix + base;
+    }
+
+    // Country overview shared by startup and the dev HUD jump. Narrow portrait
+    // fits fall below the first point tiles (z3), so the same clamp keeps dots
+    // visible everywhere it is used.
+    function jumpToBrazilOverview(animate) {
+        const camera = map.cameraForBounds(BRAZIL_BOUNDS, { padding: 48 });
+        const target = (camera && camera.zoom >= 3)
+            ? { center: camera.center, zoom: camera.zoom }
+            : { center: camera ? camera.center : [-51.9, -14.2], zoom: 3.01 };
+        if (animate) map.easeTo(Object.assign({ duration: 600 }, target));
+        else map.jumpTo(target);
     }
 
     // ------- TOOLTIP --------
@@ -886,26 +1451,83 @@
     });
 
     function fillTooltip(data) {
-        // Clone the hidden template so each hover gets a fresh DOM node.
-        const template = document.getElementById('tooltip-template').cloneNode(true);
-        template.style.display = 'block';
-        template.id = '';
+        const root = document.createElement('div');
+        const title = document.createElement('div');
+        title.className = 'g-popup-title';
+        title.textContent = data.name;
+        root.appendChild(title);
+        data.rows.forEach(function (row) {
+            const line = document.createElement('div');
+            line.className = 'g-row';
+            const label = document.createElement('div');
+            label.className = 'g-row-label';
+            label.textContent = row[0];
+            const value = document.createElement('div');
+            value.className = 'g-row-pct';
+            value.textContent = row[1];
+            line.appendChild(label);
+            line.appendChild(value);
+            root.appendChild(line);
+        });
+        return root;
+    }
 
-        const total = data.population ?? 0;
-        const proportions = Object.fromEntries(
-            ['Preta', 'Branca', 'Amarela', 'Parda', 'Indigena']
-            .map(race => [race, total ? (data.demographics[race] / total) * 100 : 0])
-        );
+    function numberValue(value) {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : 0;
+    }
 
-        template.querySelector('#census-tract').textContent = data.name;
-        template.querySelector('#population').textContent = total.toLocaleString();
-        template.querySelector('#preta').textContent = Math.round(proportions.Preta) + '%';
-        template.querySelector('#branca').textContent = Math.round(proportions.Branca) + '%';
-        template.querySelector('#amarela').textContent = Math.round(proportions.Amarela) + '%';
-        template.querySelector('#parda').textContent = Math.round(proportions.Parda) + '%';
-        template.querySelector('#indigena').textContent = Math.round(proportions.Indigena) + '%';
+    function currency(value) {
+        return numberValue(value).toLocaleString('pt-BR', {
+            style: 'currency',
+            currency: 'BRL',
+            maximumFractionDigits: 0
+        });
+    }
 
-        return template;
+    function tooltipData(name, properties) {
+        if (currentView === 'income') {
+            const households = numberValue(properties.domicilios);
+            if (!households) return null;
+            return {
+                name: name,
+                rows: [
+                    ['Domicílios', households.toLocaleString('pt-BR')],
+                    ['Renda mediana', currency(properties.renda_mediana)],
+                    ['Renda média', currency(properties.renda_media)]
+                ]
+            };
+        }
+        if (currentView === 'deaths') {
+            const categories = VIEW_CONFIGS.deaths.categories;
+            const total = categories.reduce(function (sum, item) {
+                return sum + numberValue(properties[item[0]]);
+            }, 0);
+            if (!total) return null;
+            const rows = categories.map(function (item) {
+                const count = numberValue(properties[item[0]]);
+                const pct = total ? Math.round(count / total * 100) : 0;
+                return [item[1], count.toLocaleString('pt-BR') + ' · ' + pct + '%'];
+            });
+            rows.push(['Óbitos', total.toLocaleString('pt-BR')]);
+            return { name: name, rows: rows };
+        }
+        // Same display order as the legend: population size, descending.
+        const raceRows = [
+            ['Parda', 'parda'],
+            ['Branca', 'branca'],
+            ['Preta', 'preta'],
+            ['Indígena', 'indigena'],
+            ['Amarela', 'amarela']
+        ];
+        const total = numberValue(properties.populacao);
+        return {
+            name: name,
+            rows: raceRows.map(function (item) {
+                const pct = total ? Math.round(numberValue(properties[item[1]]) / total * 100) : 0;
+                return [item[0], pct + '%'];
+            }).concat([['População', total.toLocaleString('pt-BR')]])
+        };
     }
 
     // Stable tile keys. HUD palettes keep this order when assigning the 5 hues.
@@ -936,13 +1558,25 @@
         ];
     }
 
+    function categoryColorExpression(view) {
+        const config = VIEW_CONFIGS[view];
+        const expression = ['match', ['get', config.property]];
+        config.categories.forEach(function (item) {
+            expression.push(item[0], item[2]);
+        });
+        expression.push('#777777');
+        return expression;
+    }
+
     function applyRaceColors(hues) {
         if (map.getLayer('points')) {
             map.setPaintProperty('points', 'circle-color', raceColorMatchExpression(hues));
         }
-        document.querySelectorAll('#legend-races .race-row').forEach(function (row) {
-            const i = RACE_KEYS.indexOf(row.dataset.race);
-            const swatch = row.querySelector('.race-swatch');
+        if (currentView !== 'race') return;
+        // Swatches live in three places now: desktop card, sheet list, chip rail.
+        document.querySelectorAll('#legend-races .race-row, #m-legend .race-row, #chip-rail .legend-chip').forEach(function (el) {
+            const i = RACE_KEYS.indexOf(el.dataset.category);
+            const swatch = el.querySelector('.race-swatch');
             if (swatch && i >= 0) swatch.style.backgroundColor = hues[i];
         });
     }
@@ -1034,15 +1668,7 @@
         });
     }
 
-    // style.load covers a later setStyle; load covers the first paint in GL 2.3.1.
-    map.on('style.load', hideBasemapLabels);
-
-    map.on('load', function () {
-        hideBasemapLabels();
-        // Camera first so the first tile requests are country-scale, not a leftover Rio close-up.
-        map.fitBounds(BRAZIL_BOUNDS, { padding: 48, duration: 0 });
-        refreshDevPanel();
-
+    function addCustomMapContent() {
         map.addSource('points', {
             type: 'vector',
             tiles: [
@@ -1068,8 +1694,33 @@
                 'circle-color': raceColorMatchExpression(DEFAULT_RACE_COLORS)
             }
         });
-        // Localhost may have a stored tester palette; production never calls this.
-        applyDevPalette();
+        [
+            ['income-points', 'censo2022_income', 'points-income', 'income'],
+            ['deaths-points', 'censo2022_deaths', 'points-deaths', 'deaths']
+        ].forEach(function (item) {
+            map.addSource(item[0], {
+                type: 'vector',
+                tiles: ['http://localhost:8080/data/' + item[1] + '/{z}/{x}/{y}.pbf'],
+                minzoom: 3,
+                maxzoom: 14
+            });
+            map.addLayer({
+                id: item[2],
+                type: 'circle',
+                source: item[0],
+                'source-layer': 'points',
+                layout: { visibility: 'none' },
+                paint: {
+                    'circle-radius': [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        ...CIRCLE_RADIUS_STOPS
+                    ],
+                    'circle-color': categoryColorExpression(item[3])
+                }
+            });
+        });
 
         map.addSource('setores', {
             type: 'vector',
@@ -1082,44 +1733,39 @@
             maxzoom: 12,
         });
 
+        map.addLayer({
+            'id': 'setores-fill',
+            'type': 'fill',
+            'source': 'setores',
+            'source-layer': 'setores',
+            minzoom: 10,
+            'paint': {
+                'fill-color': '#202124',
+                'fill-opacity': [
+                    'case',
+                    ['boolean', ['feature-state', 'hover'], false],
+                    0.08,
+                    0
+                ],
+            },
+        });
 
-        map.addLayer(
-            {
-                'id': 'setores-fill',
-                'type': 'fill',
-                'source': 'setores',
-                'source-layer': 'setores',
-                minzoom: 10,
-                'paint': {
-                    // Dark tint on hover so the setor reads on light-v10; 0 keeps the layer as a hit target only.
-                    'fill-color': '#202124',
-                    'fill-opacity': [
-                        'case',
-                        ['boolean', ['feature-state', 'hover'], false],
-                        0.08,
-                        0
-                    ],
-                },
-            }
-        )
-
-        map.addLayer(
-            {
-                'id': 'setores-border',
-                'type': 'line',
-                'source': 'setores',
-                'source-layer': 'setores',
-                minzoom: 10,
-                'paint': {
-                    // Near-black so the hover stroke stays visible on the light basemap.
-                    'line-color':  '#202124',
-                    'line-width': 1,
-                    'line-opacity': [
-                        'case',
-                        ['boolean', ['feature-state', 'hover'], false],
-                        1,0]
-                },
-            });
+        map.addLayer({
+            'id': 'setores-border',
+            'type': 'line',
+            'source': 'setores',
+            'source-layer': 'setores',
+            minzoom: 10,
+            'paint': {
+                'line-color': '#202124',
+                'line-width': 1,
+                'line-opacity': [
+                    'case',
+                    ['boolean', ['feature-state', 'hover'], false],
+                    1, 0
+                ]
+            },
+        });
         
         map.addSource('municipios', {
             type: 'vector',
@@ -1130,49 +1776,50 @@
             maxzoom: 9,
         });
 
-
-        map.addLayer(
-            {
-                'id': 'municipios-fill',
-                'type': 'fill',
-                'source': 'municipios',
-                'source-layer': 'municipios',
-                maxzoom: 10,
-                'paint': {
-                    // Same hover tint as setores so município outlines do not vanish on light-v10.
-                    'fill-color': '#202124',
-                    'fill-opacity': [
-                        'case',
-                        ['boolean', ['feature-state', 'hover'], false],
-                        0.08,
-                        0
-                    ],
-                }
+        map.addLayer({
+            'id': 'municipios-fill',
+            'type': 'fill',
+            'source': 'municipios',
+            'source-layer': 'municipios',
+            maxzoom: 10,
+            'paint': {
+                'fill-color': '#202124',
+                'fill-opacity': [
+                    'case',
+                    ['boolean', ['feature-state', 'hover'], false],
+                    0.08,
+                    0
+                ],
             }
-        )
+        });
 
-        map.addLayer(
-            {
-                'id': 'municipios-border',
-                'type': 'line',
-                'source': 'municipios',
-                'source-layer': 'municipios',
-                maxzoom: 10,
-                'paint': {
-                    // Near-black so the hover stroke stays visible on the light basemap.
-                    'line-color':  '#202124',
-                    'line-width': 1.2,
-                    'line-opacity': [
-                        'case',
-                        ['boolean', ['feature-state', 'hover'], false],
-                        1,0]
-                },
-            }
-        )
+        map.addLayer({
+            'id': 'municipios-border',
+            'type': 'line',
+            'source': 'municipios',
+            'source-layer': 'municipios',
+            maxzoom: 10,
+            'paint': {
+                'line-color': '#202124',
+                'line-width': 1.2,
+                'line-opacity': [
+                    'case',
+                    ['boolean', ['feature-state', 'hover'], false],
+                    1, 0
+                ]
+            },
+        });
+    }
 
-        updateDotScale();
-        // Re-apply a stored HUD multiplier after the layer exists.
+    map.on('load', function () {
+        hideBasemapLabels();
+        addCustomMapContent();
         applyRadiusMultiplier(radiusMultiplier);
+        setView(currentView, false);
+        applyDevPalette();
+        jumpToBrazilOverview(false);
+        updateDotScale();
+        refreshDevPanel();
     });
 
     let censusTractID = null;
@@ -1181,94 +1828,159 @@
         return { source: source, sourceLayer: source, id: id };
     }
 
-    map.on('mousemove', 'setores-fill', (event) => {
-        map.getCanvas().style.cursor = 'pointer';
-        mousePosition = event.lngLat;
-        if (event.features.length === 0) return;
-        
-        // ------ BORDER EFFECT --------- //
-        if (map.getZoom() >= 10) {
-            if (censusTractID) {
-                map.removeFeatureState(hoverRef('setores', censusTractID));
-            }
-            
-            censusTractID = event.features[0].id;
-        
-        
-            map.setFeatureState(hoverRef('setores', censusTractID), { hover: true });
-        
-        
-            // ------ TOOLTIP EFFECT --------- //
-            const properties = event.features[0].properties;
-            const tooltipData = {
-                name: 'Setor Censitário',
-                population: properties.populacao,
-                demographics: {
-                    Preta: properties.preta,
-                    Branca: properties.branca,
-                    Amarela: properties.amarela,
-                    Parda: properties.parda,
-                    Indigena: properties.indigena
-                }
-            };
-            const tooltipElement = fillTooltip(tooltipData);
-            popup.setLngLat(event.lngLat).setDOMContent(tooltipElement).addTo(map);
-        }
-    });
-
-    map.on('mouseleave', 'setores-fill', () => {
-        if (censusTractID) {
-            map.setFeatureState(hoverRef('setores', censusTractID), { hover: false });
-        }
-        map.getCanvas().style.cursor = '';
-        popup.remove();
-    });
-
     let municipalityID = null;
-    map.on('mousemove', 'municipios-fill', (event) => {
 
-        map.getCanvas().style.cursor = 'pointer';
-        mousePosition = event.lngLat;
-        if (event.features.length === 0) return;
-        
-
-        // ------ BORDER EFFECT --------- //
-        
-        if (map.getZoom() < 10) {
-            
-            if (municipalityID) {
-                map.removeFeatureState(hoverRef('municipios', municipalityID));
-            }
-            
-            municipalityID = event.features[0].id;
-
-            map.setFeatureState(hoverRef('municipios', municipalityID), { hover: true });
-        
-            // ------ TOOLTIP EFFECT --------- //
-            const properties = event.features[0].properties;
-            const tooltipData = {
-                name: properties.municipio,
-                population: properties.populacao,
-                demographics: {
-                    Preta: properties.preta,
-                    Branca: properties.branca,
-                    Amarela: properties.amarela,
-                    Parda: properties.parda,
-                    Indigena: properties.indigena
-                }
-            };
-            const tooltipElement = fillTooltip(tooltipData);
-            popup.setLngLat(event.lngLat).setDOMContent(tooltipElement).addTo(map);
+    function clearHoverState() {
+        if (censusTractID && map.getSource('setores')) {
+            map.removeFeatureState(hoverRef('setores', censusTractID));
         }
-    });
-    
-    map.on('mouseleave', 'municipios-fill', () => {
-        if (municipalityID) {
-            map.setFeatureState(hoverRef('municipios', municipalityID), { hover: false });
+        if (municipalityID && map.getSource('municipios')) {
+            map.removeFeatureState(hoverRef('municipios', municipalityID));
         }
+        censusTractID = null;
+        municipalityID = null;
         map.getCanvas().style.cursor = '';
         popup.remove();
+        hideStatsDock();
+    }
+
+    // ------- MOBILE STATS DOCK --------
+    // On touch the numbers dock at a fixed, thumb-reachable spot above the
+    // sheet instead of floating under the finger (Waze's street-pill position).
+
+    function showStatsDock(data) {
+        const dock = document.getElementById('stats-dock');
+        const body = document.getElementById('stats-dock-body');
+        if (!dock || !body) return;
+        body.innerHTML = '';
+        body.appendChild(fillTooltip(data));
+        dock.hidden = false;
+        // The dock and the chip rail share the strip above the sheet; showing
+        // both would be unreadable, so the rail yields while details are open.
+        document.body.classList.add('m-dock-open');
+    }
+
+    function hideStatsDock() {
+        const dock = document.getElementById('stats-dock');
+        if (dock) dock.hidden = true;
+        document.body.classList.remove('m-dock-open');
+    }
+
+    // ------- DESKTOP PANEL STATS (click-to-dock) --------
+    // Hover keeps the cursor-following popup; a CLICK parks the same numbers
+    // at the bottom of the left panel (mirror of the mobile tap dock) so they
+    // can be read and compared without chasing the mouse. Deliberately NOT
+    // cleared by clearHoverState: mousing over empty map must not dismiss a
+    // docked reading — only an empty-map click, the ✕, or a view switch does.
+
+    function showPanelStats(data) {
+        const slot = document.getElementById('panel-stats');
+        const body = document.getElementById('panel-stats-body');
+        if (!slot || !body) return;
+        body.innerHTML = '';
+        body.appendChild(fillTooltip(data));
+        slot.hidden = false;
+        const hint = document.getElementById('panel-hint');
+        if (hint) hint.hidden = true;
+    }
+
+    function hidePanelStats() {
+        const slot = document.getElementById('panel-stats');
+        if (slot) slot.hidden = true;
+        const hint = document.getElementById('panel-hint');
+        if (hint) hint.hidden = false;
+    }
+
+    function setHoveredFeature(source, id) {
+        const previous = source === 'setores' ? censusTractID : municipalityID;
+        if (previous && previous !== id) {
+            map.removeFeatureState(hoverRef(source, previous));
+        }
+        if (source === 'setores') censusTractID = id;
+        else municipalityID = id;
+        map.setFeatureState(hoverRef(source, id), { hover: true });
+    }
+
+    // One query for every surface that shows polygon stats: desktop hover
+    // (cursor popup), desktop click (panel dock), mobile tap (stats dock).
+    function detailsAtPoint(point) {
+        const isCensusTract = map.getZoom() >= 10;
+        const layer = isCensusTract ? 'setores-fill' : 'municipios-fill';
+        if (!map.getLayer(layer)) return null;
+        const features = map.queryRenderedFeatures(point, { layers: [layer] });
+        if (!features.length) return null;
+        const feature = features[0];
+        return {
+            feature: feature,
+            source: isCensusTract ? 'setores' : 'municipios',
+            data: tooltipData(
+                isCensusTract ? 'Setor Censitário' : feature.properties.municipio,
+                feature.properties
+            )
+        };
+    }
+
+    // Shared by desktop mousemove and touch tap: highlight the polygon under
+    // the pointer and show its numbers; pointing at empty map dismisses them.
+    function updateHoverDetails(point, lngLat) {
+        const hit = detailsAtPoint(point);
+        if (!hit) {
+            clearHoverState();
+            return;
+        }
+        map.getCanvas().style.cursor = 'pointer';
+        setHoveredFeature(hit.source, hit.feature.id);
+        if (!hit.data) {
+            popup.remove();
+            hideStatsDock();
+            return;
+        }
+        if (phoneLayout.matches) {
+            // Touch: docked card instead of a popup under the finger.
+            showStatsDock(hit.data);
+            popup.remove();
+        } else {
+            popup.setLngLat(lngLat).setDOMContent(fillTooltip(hit.data)).addTo(map);
+        }
+    }
+
+    map.on('mousemove', function (event) {
+        // Browsers synthesize a mousemove for taps too; on the phone layout
+        // that would open the dock while the sheet is still expanded, so the
+        // click handler below owns all touch behavior.
+        if (phoneLayout.matches) return;
+        updateHoverDetails(event.point, event.lngLat);
     });
+
+    // Touch has no hover: a tap on a município/setor shows the same stats
+    // (docked card), and a tap on water/empty map dismisses it. On desktop
+    // hover owns the popup, so the click's only job is docking the numbers
+    // into the panel slot (or clearing it on an empty-map click).
+    map.on('click', function (event) {
+        if (phoneLayout.matches) {
+            // Waze behavior: tapping the map while the sheet is open collapses
+            // it first; details come on the next tap, over a fully visible map.
+            if (sheetState !== 'peek') {
+                setSheetState('peek');
+                return;
+            }
+            updateHoverDetails(event.point, event.lngLat);
+            return;
+        }
+        const hit = detailsAtPoint(event.point);
+        if (!hit || !hit.data) {
+            hidePanelStats();
+            return;
+        }
+        setHoveredFeature(hit.source, hit.feature.id);
+        showPanelStats(hit.data);
+    });
+
+    // ✕ on the docked panel stats (desktop only; the element is inside the
+    // desktop-only .chrome-stack, so this never fires on the phone layout).
+    document.getElementById('panel-stats-close').addEventListener('click', hidePanelStats);
+
+    map.on('mouseout', clearHoverState);
 
     map.on('zoom', function () {
         updateDotScale();
@@ -1280,82 +1992,366 @@
     });
     
     map.on('zoomend', function () {
-        
-        
-        
-       if (map.getZoom() >= 10) {
-            if (municipalityID) {
+        if (map.getZoom() >= 10) {
+            if (municipalityID && map.getSource('municipios')) {
                 map.setFeatureState(hoverRef('municipios', municipalityID), { hover: false });
             }
         } else {
-            if (censusTractID) {
+            if (censusTractID && map.getSource('setores')) {
                 map.setFeatureState(hoverRef('setores', censusTractID), { hover: false });
             }
         }
-        // Drop the popup when the hover layer switches so a município tooltip
-        // does not linger after crossing zoom 10 (or the reverse).
+        // Drop the popup/dock when the hover layer switches so a município
+        // tooltip does not linger after crossing zoom 10 (or the reverse).
         popup.remove();
+        hideStatsDock();
     });
 
-    const ALL_RACES = RACE_KEYS;
-    const activeRaces = new Set(ALL_RACES);
-    const raceRows = document.querySelectorAll('#legend-races .race-row');
+    // Toggle/solo are shared by legend rows (desktop card + sheet) and chips,
+    // so every surface stays in the same Set and the same map filter.
+    function toggleCategory(key) {
+        const active = activeCategories[currentView];
+        if (active.has(key)) active.delete(key);
+        else active.add(key);
+        syncFilterUi();
+        updateMapFilter();
+    }
 
-    function syncFilterUi() {
-        raceRows.forEach(function (row) {
-            const on = activeRaces.has(row.dataset.race);
-            row.classList.toggle('is-off', !on);
-            row.querySelector('.race-row-toggle').setAttribute('aria-checked', on ? 'true' : 'false');
+    function soloCategory(key) {
+        const active = activeCategories[currentView];
+        active.clear();
+        active.add(key);
+        syncFilterUi();
+        updateMapFilter();
+    }
+
+    function buildLegendRow(item) {
+        const row = document.createElement('li');
+        row.className = 'race-row';
+        row.dataset.category = item[0];
+        row.innerHTML =
+            '<button type="button" class="race-row-toggle" role="checkbox" aria-checked="true">' +
+            '<span class="race-swatch"></span><span class="race-row-label"></span></button>' +
+            '<button type="button" class="solo-button" title="Mostrar só esta categoria">S</button>';
+        row.querySelector('.race-swatch').style.backgroundColor = item[2];
+        row.querySelector('.race-row-label').textContent = item[1];
+        row.querySelector('.solo-button').setAttribute('aria-label', 'Mostrar só ' + item[1]);
+        row.querySelector('.race-row-toggle').addEventListener('click', function () {
+            toggleCategory(item[0]);
+        });
+        row.querySelector('.solo-button').addEventListener('click', function (event) {
+            event.stopPropagation();
+            soloCategory(item[0]);
+        });
+        return row;
+    }
+
+    function renderLegend() {
+        const config = VIEW_CONFIGS[currentView];
+        // Same rows in the desktop card and in the sheet's full state: one
+        // renderer, two lists, zero drift between layouts.
+        ['legend-races', 'm-legend'].forEach(function (id) {
+            const list = document.getElementById(id);
+            if (!list) return;
+            list.innerHTML = '';
+            config.categories.forEach(function (item) {
+                list.appendChild(buildLegendRow(item));
+            });
+        });
+        renderChipRail();
+        syncFilterUi();
+    }
+
+    // The chip rail is the always-visible legend of the phone peek state.
+    // Rebuilt per view because Raça/Renda/Óbitos have 5/7/5 categories.
+    function renderChipRail() {
+        const rail = document.getElementById('chip-rail');
+        if (!rail) return;
+        rail.innerHTML = '';
+        VIEW_CONFIGS[currentView].categories.forEach(function (item) {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'legend-chip';
+            chip.dataset.category = item[0];
+            chip.setAttribute('aria-pressed', 'true');
+            chip.title = item[1] + ' — toque filtra, toque longo mostra só esta';
+            chip.innerHTML = '<span class="race-swatch"></span><span class="legend-chip-label"></span>';
+            chip.querySelector('.race-swatch').style.backgroundColor = item[2];
+            chip.querySelector('.legend-chip-label').textContent = item[1];
+            wireChip(chip, item[0]);
+            rail.appendChild(chip);
         });
     }
 
-    raceRows.forEach(function (row) {
-        const toggle = row.querySelector('.race-row-toggle');
-        const soloButton = row.querySelector('.solo-button');
-
-        toggle.addEventListener('click', function () {
-            const race = row.dataset.race;
-            if (activeRaces.has(race)) {
-                activeRaces.delete(race);
-            } else {
-                activeRaces.add(race);
+    // Tap = toggle, long-press (500ms) = solo. Solo also exists as the "só"
+    // buttons in the sheet legend list, so the gesture is a shortcut, not the
+    // only path.
+    function wireChip(chip, key) {
+        let pressTimer = null;
+        let longPressed = false;
+        let startX = 0;
+        let startY = 0;
+        chip.addEventListener('pointerdown', function (e) {
+            longPressed = false;
+            startX = e.clientX;
+            startY = e.clientY;
+            clearTimeout(pressTimer);
+            pressTimer = setTimeout(function () {
+                longPressed = true;
+                soloCategory(key);
+            }, 500);
+        });
+        function cancelPress() {
+            clearTimeout(pressTimer);
+        }
+        chip.addEventListener('pointermove', function (e) {
+            // A moving finger is scrolling the rail, not long-pressing.
+            if (Math.hypot(e.clientX - startX, e.clientY - startY) > 10) cancelPress();
+        });
+        chip.addEventListener('pointerup', cancelPress);
+        chip.addEventListener('pointercancel', cancelPress);
+        chip.addEventListener('click', function (e) {
+            // The click that follows a long-press must not undo the solo.
+            if (longPressed) {
+                e.preventDefault();
+                longPressed = false;
+                return;
             }
-            syncFilterUi();
-            updateMapFilter();
+            toggleCategory(key);
         });
+        // Long-press must not open the browser context menu on Android.
+        chip.addEventListener('contextmenu', function (e) {
+            e.preventDefault();
+        });
+    }
 
-        soloButton.addEventListener('click', function (e) {
-            e.stopPropagation();
-            activeRaces.clear();
-            activeRaces.add(row.dataset.race);
-            syncFilterUi();
-            updateMapFilter();
+    function syncFilterUi() {
+        const active = activeCategories[currentView];
+        document.querySelectorAll('#legend-races .race-row, #m-legend .race-row').forEach(function (row) {
+            const on = active.has(row.dataset.category);
+            row.classList.toggle('is-off', !on);
+            row.querySelector('.race-row-toggle').setAttribute('aria-checked', on ? 'true' : 'false');
         });
-    });
+        document.querySelectorAll('#chip-rail .legend-chip').forEach(function (chip) {
+            const on = active.has(chip.dataset.category);
+            chip.classList.toggle('is-off', !on);
+            chip.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+        // The sheet headline carries the "Mostrando/Filtro" prefix.
+        updateDotScale();
+    }
 
     function updateMapFilter() {
-        if (!map.getLayer('points')) return;
-        const races = [...activeRaces];
-        // Empty match arrays throw in Mapbox; hide every race instead.
-        if (races.length === 0) {
-            map.setFilter('points', ['==', ['get', 'race'], '']);
+        const config = VIEW_CONFIGS[currentView];
+        if (!map.getLayer(config.layer)) return;
+        const selected = [...activeCategories[currentView]];
+        if (selected.length === 0) {
+            map.setFilter(config.layer, ['==', ['get', config.property], '']);
             return;
         }
-        map.setPaintProperty('points', 'circle-opacity', [
+        map.setFilter(config.layer, [
             'match',
-            ['get', 'race'],
-            races,
-            1,
-            0.1
-        ]);
-        map.setFilter('points', [
-            'match',
-            ['get', 'race'],
-            races,
+            ['get', config.property],
+            selected,
             true,
             false
         ]);
     }
+
+    function setView(view, moveCamera) {
+        // Hidden views stay unreachable even via console/dev paths.
+        if (!VIEW_CONFIGS[view] || HIDDEN_VIEWS.has(view)) return;
+        currentView = view;
+        try {
+            sessionStorage.setItem(VIEW_STORAGE, view);
+        } catch (e) { /* private mode */ }
+        document.getElementById('intro-explainer').textContent = VIEW_CONFIGS[view].explainer;
+        // The sheet mirrors the panel: same explainer, same switcher state.
+        const sheetExplainer = document.getElementById('sheet-explainer');
+        if (sheetExplainer) sheetExplainer.textContent = VIEW_CONFIGS[view].explainer;
+        // Both titles carry the active lens ("por <label>", matching the
+        // switcher copy): the mobile sheet title and now the desktop h1 too.
+        // The <title> tag stays the plain product name — tab labels should
+        // not churn on every view switch.
+        const lensTitle = 'Onde o Brasil mora por ' + VIEW_CONFIGS[view].label;
+        const introTitle = document.getElementById('intro-title');
+        if (introTitle) introTitle.textContent = lensTitle;
+        const sheetTitle = document.getElementById('sheet-title');
+        if (sheetTitle) sheetTitle.textContent = lensTitle;
+        // A docked stats card describes the previous view's categories; drop it.
+        hidePanelStats();
+        document.querySelectorAll('#view-switcher button, #m-view-switcher button').forEach(function (button) {
+            button.setAttribute('aria-pressed', button.dataset.view === view ? 'true' : 'false');
+        });
+        if (map.getLayer('points')) {
+            Object.keys(VIEW_CONFIGS).forEach(function (key) {
+                map.setLayoutProperty(
+                    VIEW_CONFIGS[key].layer,
+                    'visibility',
+                    key === view ? 'visible' : 'none'
+                );
+            });
+        }
+        renderLegend();
+        if (view === 'race') applyDevPalette();
+        updateMapFilter();
+        updateDotScale();
+        popup.remove();
+        // A docked card describing the previous view's numbers would be stale.
+        hideStatsDock();
+        refreshDevPanel();
+    }
+
+    document.querySelectorAll('#view-switcher button, #m-view-switcher button').forEach(function (button) {
+        button.addEventListener('click', function () {
+            setView(button.dataset.view, true);
+        });
+    });
+    renderLegend();
+
+    // ------- MOBILE SHEET (≤640px) --------
+    // Waze grammar: one bottom sheet with three snap states, dragged by its
+    // header via pointer events + CSS transforms (no libraries). Desktop keeps
+    // the two cards and never runs the phone-only branches below.
+
+    const SHEET_STATE_STORAGE = 'dotmap-sheet-state';
+    const SHEET_STATES = ['peek', 'half', 'full'];
+    const sheetEl = document.getElementById('sheet');
+    const sheetHeaderEl = document.getElementById('sheet-header');
+    let sheetState = 'half';
+
+    // translateY px per state, computed from live heights so rotation and the
+    // dvh/browser-UI dance stay correct without magic numbers.
+    function sheetOffsets() {
+        const total = sheetEl.offsetHeight;
+        const peekH = sheetHeaderEl.offsetHeight;
+        // Half reveals the story block (title, scale, switcher, explainer)
+        // while the map keeps at least ~half the screen.
+        const halfH = Math.min(Math.round(window.innerHeight * 0.52), 400);
+        return {
+            full: 0,
+            half: Math.max(0, total - Math.max(halfH, peekH)),
+            peek: Math.max(0, total - peekH)
+        };
+    }
+
+    function setSheetState(state, options) {
+        if (SHEET_STATES.indexOf(state) === -1) return;
+        sheetState = state;
+        sheetEl.style.transform = 'translateY(' + sheetOffsets()[state] + 'px)';
+        // Body classes drive dependent chrome: the chip rail hides beyond peek,
+        // the sheet content only scrolls when full.
+        SHEET_STATES.forEach(function (s) {
+            document.body.classList.toggle('m-sheet-' + s, s === state);
+        });
+        // Rail, dock, and attribution all sit relative to the peeked header.
+        document.documentElement.style.setProperty('--m-peek-h', sheetHeaderEl.offsetHeight + 'px');
+        if (!options || !options.skipStore) {
+            try {
+                sessionStorage.setItem(SHEET_STATE_STORAGE, state);
+            } catch (e) { /* private mode */ }
+        }
+    }
+
+    // The one geocoder instance moves between the desktop pill (right of the
+    // panel) and the mobile top bar; two instances would double Mapbox requests
+    // and fight over input state. Neither slot lives inside a card anymore, so
+    // search is reachable without scanning the panel/sheet.
+    function placeGeocoder() {
+        const el = document.querySelector('.mapboxgl-ctrl-geocoder');
+        const slot = document.getElementById(phoneLayout.matches ? 'm-search-bar' : 'desk-search');
+        if (el && slot && el.parentElement !== slot) slot.appendChild(el);
+    }
+
+    (function initMobileSheet() {
+        if (!sheetEl || !sheetHeaderEl) return;
+
+        // First visit: half, so the story shows once (state A). Afterwards the
+        // reader's last snap state wins for the rest of the session.
+        let stored = null;
+        try {
+            stored = sessionStorage.getItem(SHEET_STATE_STORAGE);
+        } catch (e) { /* private mode */ }
+        if (phoneLayout.matches) {
+            setSheetState(SHEET_STATES.indexOf(stored) !== -1 ? stored : 'half', { skipStore: true });
+        }
+
+        // Offsets are px, not %: rotation and viewport resizes need a re-apply.
+        window.addEventListener('resize', function () {
+            if (phoneLayout.matches) setSheetState(sheetState, { skipStore: true });
+        });
+        const onBreakpointChange = function () {
+            placeGeocoder();
+            if (phoneLayout.matches) setSheetState(sheetState, { skipStore: true });
+        };
+        // Safari < 14 only has addListener.
+        if (phoneLayout.addEventListener) phoneLayout.addEventListener('change', onBreakpointChange);
+        else if (phoneLayout.addListener) phoneLayout.addListener(onBreakpointChange);
+
+        // Drag from the header only: the content area keeps native scrolling
+        // (full state), so gesture ownership never conflicts.
+        let dragging = false;
+        let dragStartY = 0;
+        let dragStartOffset = 0;
+        let dragMoved = false;
+
+        sheetHeaderEl.addEventListener('pointerdown', function (e) {
+            dragging = true;
+            dragMoved = false;
+            dragStartY = e.clientY;
+            dragStartOffset = sheetOffsets()[sheetState];
+            sheetEl.classList.add('is-dragging');
+            try {
+                // Keeps the drag alive when the finger leaves the header strip.
+                sheetHeaderEl.setPointerCapture(e.pointerId);
+            } catch (err) { /* synthetic events have no capturable pointer */ }
+        });
+
+        sheetHeaderEl.addEventListener('pointermove', function (e) {
+            if (!dragging) return;
+            const dy = e.clientY - dragStartY;
+            if (Math.abs(dy) > 6) dragMoved = true;
+            const offsets = sheetOffsets();
+            const next = Math.min(offsets.peek, Math.max(offsets.full, dragStartOffset + dy));
+            sheetEl.style.transform = 'translateY(' + next + 'px)';
+        });
+
+        function endDrag(e) {
+            if (!dragging) return;
+            dragging = false;
+            sheetEl.classList.remove('is-dragging');
+            if (!dragMoved) return; // a tap: the click handler below decides
+            const offsets = sheetOffsets();
+            const current = dragStartOffset + (e.clientY - dragStartY);
+            let nearest = sheetState;
+            let best = Infinity;
+            SHEET_STATES.forEach(function (s) {
+                const d = Math.abs(offsets[s] - current);
+                if (d < best) {
+                    best = d;
+                    nearest = s;
+                }
+            });
+            setSheetState(nearest);
+        }
+        sheetHeaderEl.addEventListener('pointerup', endDrag);
+        sheetHeaderEl.addEventListener('pointercancel', endDrag);
+
+        // Tap on the header toggles the two everyday states; full is a drag away.
+        sheetHeaderEl.addEventListener('click', function () {
+            if (dragMoved) {
+                dragMoved = false;
+                return;
+            }
+            setSheetState(sheetState === 'peek' ? 'half' : 'peek');
+        });
+
+        document.getElementById('stats-dock-close').addEventListener('click', function () {
+            clearHoverState();
+        });
+
+        placeGeocoder();
+    })();
 
     // ------- LOCAL DEV HUD --------
     // Loopback only: carabetta.xyz must never see the toggle or the panel.
@@ -1378,6 +2374,8 @@
             zoomNum.value = zoom.toFixed(2);
         }
         document.getElementById('dev-per-dot').textContent = peoplePerDot(zoom).toLocaleString();
+        const colorTools = devPanelEl.querySelector('.dev-colors');
+        if (colorTools) colorTools.hidden = currentView !== 'race';
         const radiusPx = document.getElementById('dev-radius-px');
         const radiusMult = document.getElementById('dev-radius-mult');
         const radiusSlider = document.getElementById('dev-radius-slider');
@@ -1436,7 +2434,7 @@
             '</div>' +
             '</div>' +
             '<dl>' +
-            '<dt>pessoas/ponto</dt><dd id="dev-per-dot"></dd>' +
+            '<dt>unidades/ponto</dt><dd id="dev-per-dot"></dd>' +
             '<dt>centro</dt><dd id="dev-center"></dd>' +
             '<dt>bbox</dt><dd id="dev-bounds"></dd>' +
             '<dt>hover</dt><dd id="dev-hover"></dd>' +
@@ -1568,7 +2566,8 @@
         });
 
         function jumpBrazilOverview() {
-            map.fitBounds(BRAZIL_BOUNDS, { padding: 48, duration: 0 });
+            // Same clamped overview as startup.
+            jumpToBrazilOverview(false);
         }
 
         // Old product start; zoom 15 overzooms the z=14 tiles so close-up dots are inspectable.

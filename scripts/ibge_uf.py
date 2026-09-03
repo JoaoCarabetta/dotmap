@@ -61,11 +61,15 @@ def parse_uf(raw: str) -> str:
 
 
 def num(value: str) -> float:
-    # IBGE marks suppressed cells as X; treat as 0 so dots can be generated.
+    # IBGE uses X for confidentiality and "." for unavailable aggregates.
+    # Both become 0 for arithmetic, while docs/UI retain the caveat that
+    # these are unknown values rather than observed zeroes.
     value = (value or "").strip().strip('"')
-    if value in ("", "X"):
+    if value in ("", "X", ".", ".."):
         return 0.0
-    return float(value)
+    # Some newer aggregate files use decimal commas even though older
+    # national CSVs use decimal points.
+    return float(value.replace(",", "."))
 
 
 def csv_fieldmap(fieldnames: list[str] | None) -> dict[str, str]:
@@ -127,7 +131,9 @@ def merge_hover() -> None:
             out.write_text('{"type":"FeatureCollection","features":[]}\n', encoding="utf-8")
             print(f"wrote {out} features=0 from 0 UF files")
             continue
-        args = ["-i", *[str(p) for p in parts], "combine-files", "-merge-layers"]
+        # Theme builders add renda/óbito columns to every UF. `force` keeps
+        # those extra fields when an older file is missing a column.
+        args = ["-i", *[str(p) for p in parts], "combine-files", "-merge-layers", "force"]
         # Intermediate only. Unsimplified IBGE polygons grow past 100MB.
         # Per-UF files used for dots stay full-res.
         args.extend(["-simplify", "dp", "0.001", "keep-shapes"])

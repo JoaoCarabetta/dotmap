@@ -22,6 +22,27 @@ Log of census files used by this project. Raw downloads stay under `data/` (giti
 - **Downloaded:** 2026-09-01
 - **Local path:** `data/censo2022/raw/dicionario_de_dados_agregados_por_setores_censitarios_20260520.xlsx`
 
+## Censo 2022 — renda do responsável por setor (universo)
+
+- **Official name:** Agregados por Setores Censitários — Rendimento do Responsável
+- **URL:** https://ftp.ibge.gov.br/Censos/Censo_Demografico_2022/Agregados_por_Setores_Censitarios_Rendimento_do_Responsavel/Agregados_por_setores_renda_responsavel_BR_20260508_csv.zip
+- **Local CSV:** `data/censo2022/raw/Agregados_por_setores_renda_responsavel_BR_20260508.csv`
+- **Grain:** one row per setor (`CD_SETOR`); 458,772 rows nationally.
+- **Fields used:** `V06001` responsible persons in occupied permanent private households; `V06004` mean nominal monthly income among responsible persons with income; `V06006` median.
+- **Map interpretation:** dot quantity represents households via `V06001`; every dot in a setor receives the setor's `V06006` class. It does not reconstruct each household's income.
+- **Bins:** fixed multiples of the 2022 minimum wage (R$ 1,212): up to 1, 1–2, 2–3, 3–5, 5–10, over 10; unavailable median is separate.
+- **Coverage in this repo:** income dots for all 27 UFs.
+
+## Censo 2022 — óbitos por setor (universo)
+
+- **URL:** https://ftp.ibge.gov.br/Censos/Censo_Demografico_2022/Agregados_por_Setores_Censitarios/Agregados_por_Setor_csv/Agregados_por_setores_obitos_BR.zip
+- **Local CSV:** `data/censo2022/raw/Agregados_por_setores_obitos_BR.csv`
+- **Period:** January 2019 through July 2022.
+- **Categories:** age at death `0–14`, `15–29`, `30–59`, `60+`; male and female columns are summed and gender is not exposed.
+- **Suppression:** age cells are heavily suppressed. Nationally, visible sex totals contain about 3.63M deaths, while about 1.91M have visible detailed ages. The residual is mapped as **Idade suprimida**, not zero.
+- **Limitations:** no cause of death and no race of the deceased. Race columns in this theme refer to the household responsible person.
+- **Coverage in this repo:** mortality dots for all 27 UFs.
+
 ## Malha municipal 2022 — por UF (polígonos de hover)
 
 - **Official name:** Malha Municipal Digital 2022 — municípios por UF
@@ -41,7 +62,7 @@ Log of census files used by this project. Raw downloads stay under `data/` (giti
 ## Not downloaded in this slice
 
 - National setor malha (`BR_setores_CD2022.gpkg`, ~1.4 GB). Do not download it; use the per-UF SHP above.
-- Alfabetização, saneamento, and religião files. See the national-themes plan.
+- Alfabetização, saneamento, and religião files.
 
 ## Re-download
 
