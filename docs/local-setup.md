@@ -7,12 +7,14 @@ How to run the map on this machine. Verified 2026-09-02 with per-UF tiles under 
 In the repo:
 
 - `index.html` (map UI; Mapbox **light-v10** basemap with symbol/label layers hidden; opens on Brazil via `fitBounds`, not Rio)
-- `tiles/{UF}/zoom3-3` … `tiles/{UF}/zoom14-14` (per-UF MBTiles; 27 UFs; 3–6 clustered setor)
-- `config.json` (expects a merged file at `data/tiles/censo2022.mbtiles`)
+- `tiles/{UF}/zoom3-3` … `tiles/{UF}/zoom14-14` (per-UF race MBTiles; 27 UFs; 3–6 clustered setor)
+- `config.json` (expects race, income, deaths, and hover MBTiles under `data/tiles/`)
+- Theme builders (`scripts/themes.py`, `makefiles.sh` with a theme arg). **Income/deaths per-UF MBTiles are not versioned** — generate them locally, then `tile-join`
 
 Not in git (`data/` is missing on a fresh clone):
 
 - `data/tiles/censo2022.mbtiles` — build it with `tile-join` (below)
+- `data/tiles/censo2022_income.mbtiles` and `censo2022_deaths.mbtiles`
 - `data/tiles/hover.mbtiles` — município (z3–9) and setor (z10–12, overzoom after) hover; `python3 scripts/ibge_uf.py tiles`
 - `data/censo2022/output/tiles/race/census_tract.geojson` — intermediate for hover tiles (do not load in the browser)
 - `data/censo2022/output/tiles/race/municipality.geojson` — intermediate for hover tiles
@@ -39,6 +41,8 @@ Do **not** run `./makefiles.sh` just to view the map. The script requires a UF a
 #    and São Paulo goes blank even though tiles/SP/ exists for all 27 UFs.
 mkdir -p data/tiles
 tile-join -f --no-tile-size-limit -o data/tiles/censo2022.mbtiles tiles/*/*/tiles.mbtiles
+tile-join -f --no-tile-size-limit -o data/tiles/censo2022_income.mbtiles tiles/income/*/*/tiles.mbtiles
+tile-join -f --no-tile-size-limit -o data/tiles/censo2022_deaths.mbtiles tiles/deaths/*/*/tiles.mbtiles
 python3 scripts/ibge_uf.py tiles
 
 # 2. Vector tiles (must stay on 8080; index.html hardcodes that host/port).
@@ -51,13 +55,14 @@ npx --yes tileserver-gl -c config.json -V
 uv run python -m http.server 8001
 ```
 
-Open `http://localhost:8001`. Tiles are requested from `http://localhost:8080/data/censo2022/{z}/{x}/{y}.pbf`.
+Open `http://localhost:8001`. The switcher shows **Raça** and **Renda** (Óbitos stays hidden; `HIDDEN_VIEWS` in `index.html`). Race tiles are versioned; Renda/Óbitos need the local theme join above.
 
 On localhost a top-right **dev** button (or `D` / `` ` ``) toggles a HUD. Zoom and raio are sliders (raio is a 0.5×–3× multiplier on the coded radius curve; **reset** returns to 1×). `1` jumps to the Brazil overview; `2` jumps to Rio at zoom 15 (tiles still max out at 14). It is not injected on `carabetta.xyz`.
 
 Sanity checks used in the reproduction:
 
 - `GET /data/censo2022.json` → `minzoom` 3, `maxzoom` 14, layer `points`, field `race`
+- `GET /data/censo2022_income.json` and `/data/censo2022_deaths.json` → zooms 3–14, layer `points`, field `cat`
 - Sample PBF at zoom 3 (`3/3/4.pbf`), zoom 4 (`4/6/9.pbf`) and zoom 7 (`7/48/72.pbf`) return 200
 - SP at z7 (`7/47/72.pbf`, TMS `7/47/55`) is present and large (~508 KB). A join without `--no-tile-size-limit` drops it.
 - If 8080 is down, Mapbox overzooms the last cached zoom and 10–14 look frozen even though native tiles exist.
@@ -79,6 +84,16 @@ Needs GCP access to `rj-escritorio-dev` and raw files that live only under `data
 python3 scripts/build_municipality.py RR
 python3 scripts/build_census_tract.py RR
 python3 scripts/build_density_clusters.py RR
+```
+
+For income or deaths, pass the theme. National rebuild (two UFs in parallel):
+
+```sh
+printf '%s\n' AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO \
+  | xargs -P 2 -n 1 ./scripts/build_theme_pair.sh
+tile-join -f --no-tile-size-limit -o data/tiles/censo2022_income.mbtiles tiles/income/*/*/tiles.mbtiles
+tile-join -f --no-tile-size-limit -o data/tiles/censo2022_deaths.mbtiles tiles/deaths/*/*/tiles.mbtiles
+python3 scripts/ibge_uf.py
 ```
 
 3. Generate dots and MBTiles for that UF. A full run regenerates 7–14 for that state only:

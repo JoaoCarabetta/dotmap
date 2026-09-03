@@ -7,6 +7,12 @@
     "censo2022": {
         "mbtiles": "data/tiles/censo2022.mbtiles"
     },
+    "censo2022_income": {
+        "mbtiles": "data/tiles/censo2022_income.mbtiles"
+    },
+    "censo2022_deaths": {
+        "mbtiles": "data/tiles/censo2022_deaths.mbtiles"
+    },
     "hover": {
         "mbtiles": "data/tiles/hover.mbtiles"
     }

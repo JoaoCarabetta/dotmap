@@ -19,9 +19,11 @@ import math
 import sys
 from collections import defaultdict
 from itertools import combinations
+from pathlib import Path
 
 from build_census_tract import ensure_malha
-from ibge_uf import RACE_DIR, RACES, parse_uf, run_mapshaper
+from ibge_uf import parse_uf, run_mapshaper
+from themes import Theme, get_theme
 
 # Urban fabric (1–3) and rural settlements/povoados (5–7). Zona rural (8)
 # and empty (9) stay sparse so a village is not dissolved into hinterland.
@@ -29,14 +31,6 @@ DENSE_SITS = {"1", "2", "3", "5", "6", "7"}
 
 # target_pop ≈ per_dot of that zoom so a cluster can emit at least one
 # dot. Steps ~2.25× into z7 (4500 / 2000 / 900 / 400 / 150).
-CLUSTER_ZOOMS = {
-    3: 4500,
-    4: 2000,
-    5: 900,
-    6: 400,
-}
-
-
 def sit_code(value) -> str:
     if value is None:
         return ""
@@ -184,15 +178,16 @@ def cluster_ids(
     return [find(i) for i in range(n)]
 
 
-def prepare_working(uf: str) -> Path:
-    counts_csv = RACE_DIR / f"census_tract_{uf}_counts.csv"
+def prepare_working(uf: str, theme: Theme) -> Path:
+    out_dir = theme.output_dir
+    counts_csv = out_dir / f"census_tract_{uf}_counts.csv"
     if not counts_csv.exists():
         raise SystemExit(
-            f"Missing {counts_csv}. Run: python3 scripts/build_census_tract.py {uf}"
+            f"Missing {counts_csv}. Run: python3 scripts/build_census_tract.py {uf} {theme.id}"
         )
     shp = ensure_malha(uf)
-    work = RACE_DIR / f"cluster_{uf}_working.geojson"
-    # Join race counts onto the malha so CD_SIT / AREA_KM2 survive; the
+    work = out_dir / f"cluster_{uf}_working.geojson"
+    # Join theme counts onto the malha so CD_SIT / AREA_KM2 survive; the
     # published census_tract GeoJSON drops those fields.
     run_mapshaper(
         [
@@ -226,9 +221,16 @@ def num_prop(value) -> float:
     return float(value)
 
 
-def write_zoom(uf: str, work: Path, features: list[dict], nbr: list[set[int]], zoom: int) -> None:
-    target = CLUSTER_ZOOMS[zoom]
-    pops = [num_prop(p.get("populacao")) for p in features]
+def write_zoom(
+    uf: str,
+    theme: Theme,
+    work: Path,
+    features: list[dict],
+    nbr: list[set[int]],
+    zoom: int,
+) -> None:
+    target = theme.per_dot[zoom - 3]
+    pops = [num_prop(p.get(theme.total_field)) for p in features]
     areas = [num_prop(p.get("AREA_KM2")) for p in features]
     classes = [density_class(p.get("CD_SIT")) for p in features]
     roots = cluster_ids(pops, areas, classes, nbr, target)
@@ -240,7 +242,7 @@ def write_zoom(uf: str, work: Path, features: list[dict], nbr: list[set[int]], z
             remap[root] = len(remap)
         labels.append(remap[root])
 
-    assign_csv = RACE_DIR / f"cluster_{uf}_z{zoom}_assign.csv"
+    assign_csv = theme.output_dir / f"cluster_{uf}_z{zoom}_assign.csv"
     with assign_csv.open("w", encoding="utf-8", newline="") as fh:
         writer = csv.DictWriter(
             fh, fieldnames=["id_setor_censitario", "cluster_id", "density_class"]
@@ -255,8 +257,8 @@ def write_zoom(uf: str, work: Path, features: list[dict], nbr: list[set[int]], z
                 }
             )
 
-    out_path = RACE_DIR / f"cluster_{uf}_z{zoom}.geojson"
-    race_sum = ",".join(RACES)
+    out_path = theme.output_dir / f"cluster_{uf}_z{zoom}.geojson"
+    category_sum = ",".join(theme.categories)
     run_mapshaper(
         [
             str(work),
@@ -266,7 +268,7 @@ def write_zoom(uf: str, work: Path, features: list[dict], nbr: list[set[int]], z
             "string-fields=id_setor_censitario,cluster_id,density_class",
             "-dissolve",
             "cluster_id",
-            f"sum-fields={race_sum},populacao",
+            f"sum-fields={category_sum},{theme.total_field}",
             "copy-fields=sigla_uf,density_class",
             "-o",
             "format=geojson",
@@ -286,12 +288,12 @@ def write_zoom(uf: str, work: Path, features: list[dict], nbr: list[set[int]], z
 
 def parse_zooms(raw: str | None) -> list[int]:
     if not raw:
-        return sorted(CLUSTER_ZOOMS)
+        return [3, 4, 5, 6]
     zooms = []
     for part in raw.split(","):
         z = int(part.strip())
-        if z not in CLUSTER_ZOOMS:
-            known = ", ".join(str(k) for k in sorted(CLUSTER_ZOOMS))
+        if z not in (3, 4, 5, 6):
+            known = "3, 4, 5, 6"
             raise SystemExit(f"Unknown cluster zoom {z}. Expected one of: {known}")
         zooms.append(z)
     return zooms
@@ -299,12 +301,13 @@ def parse_zooms(raw: str | None) -> list[int]:
 
 def main(argv: list[str] | None = None) -> None:
     args = argv if argv is not None else sys.argv[1:]
-    if not args:
-        raise SystemExit(f"Usage: {sys.argv[0]} <UF> [zooms]")
+    if not 1 <= len(args) <= 3:
+        raise SystemExit(f"Usage: {sys.argv[0]} <UF> [zooms] [race|income|deaths]")
     uf = parse_uf(args[0])
     zooms = parse_zooms(args[1] if len(args) > 1 else None)
-    RACE_DIR.mkdir(parents=True, exist_ok=True)
-    work = prepare_working(uf)
+    theme = get_theme(args[2] if len(args) > 2 else None)
+    theme.output_dir.mkdir(parents=True, exist_ok=True)
+    work = prepare_working(uf, theme)
     features, nbr = load_features(work)
     deg = sum(len(s) for s in nbr) / max(len(nbr), 1)
     print(
@@ -312,7 +315,7 @@ def main(argv: list[str] | None = None) -> None:
         flush=True,
     )
     for zoom in zooms:
-        write_zoom(uf, work, features, nbr, zoom)
+        write_zoom(uf, theme, work, features, nbr, zoom)
 
 
 if __name__ == "__main__":

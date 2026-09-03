@@ -1,22 +1,19 @@
-"""Build municipality_{UF}.geojson without geopandas/geobr.
+"""Build themed municipality_{UF}.geojson without geopandas/geobr.
 
-Stdlib aggregates the national race CSV for one UF; the IBGE municipal
-shapefile + mapshaper supply polygons and the join. Writes the per-UF
-file and refreshes the concatenated hover GeoJSON.
+Income uses IBGE's municipality file because setor medians are not
+additive. Race and mortality can be aggregated from their setor CSVs.
 """
 
 from __future__ import annotations
 
 import csv
 import sys
+import zipfile
 from collections import defaultdict
 
 from ibge_uf import (
-    CSV_PATH,
     RACE_DIR,
-    RACES,
     RAW_DIR,
-    SRC_COLS,
     UF_CODES,
     csv_fieldmap,
     download,
@@ -27,6 +24,8 @@ from ibge_uf import (
     run_mapshaper,
     unzip,
 )
+from themes import Theme, get_theme
+from build_census_tract import ensure_theme_source
 
 MALHA_URL = (
     "https://geoftp.ibge.gov.br/organizacao_do_territorio/"
@@ -35,38 +34,77 @@ MALHA_URL = (
 )
 
 
-def aggregate_counts(uf: str) -> None:
+def ensure_municipality_source(theme: Theme) -> None:
+    if theme.id != "income" or (theme.municipality_path and theme.municipality_path.exists()):
+        return
+    if not theme.municipality_url or not theme.municipality_zip or not theme.municipality_path:
+        raise SystemExit("Income municipality source is not configured")
+    download(theme.municipality_url, theme.municipality_zip)
+    with zipfile.ZipFile(theme.municipality_zip) as zf:
+        csv_names = [name for name in zf.namelist() if name.lower().endswith(".csv")]
+        if len(csv_names) != 1:
+            raise SystemExit(f"Expected one CSV in {theme.municipality_zip}")
+        with zf.open(csv_names[0]) as src, theme.municipality_path.open("wb") as dest:
+            dest.write(src.read())
+
+
+def aggregate_counts(uf: str, theme: Theme) -> None:
     prefix = UF_CODES[uf]
-    agg: dict[str, dict[str, float]] = defaultdict(lambda: {r: 0.0 for r in RACES})
-    with CSV_PATH.open(encoding="latin-1", newline="") as fh:
+    source = theme.municipality_path if theme.id == "income" else theme.source_path
+    if source is None or not source.exists():
+        raise SystemExit(f"Missing source CSV: {source}")
+    key = "CD_MUN" if theme.id == "income" else theme.key_field
+    agg: dict[str, dict[str, float]] = defaultdict(
+        lambda: {category: 0.0 for category in theme.categories}
+    )
+    metrics: dict[str, dict[str, float]] = {}
+    with source.open(encoding="latin-1", newline="") as fh:
         reader = csv.DictReader(fh, delimiter=";")
         fieldmap = csv_fieldmap(reader.fieldnames)
         for row in reader:
-            setor = row[fieldmap["CD_SETOR"]].strip('"')
-            if not setor.startswith(prefix):
+            geo_id = row[fieldmap[key]].strip('"')
+            if not geo_id.startswith(prefix):
                 continue
-            mun = setor[:7]
-            for dest, src in zip(RACES, SRC_COLS):
-                agg[mun][dest] += num(row[fieldmap[src]])
+            mun = geo_id[:7]
+            values = theme.extract(row, fieldmap)
+            for category in theme.categories:
+                agg[mun][category] += float(values[category])
+            if theme.id == "income":
+                metrics[mun] = {
+                    "renda_media": float(values["renda_media"]),
+                    "renda_mediana": float(values["renda_mediana"]),
+                    theme.total_field: float(values[theme.total_field]),
+                }
+            else:
+                metrics.setdefault(mun, {theme.total_field: 0.0})
+                metrics[mun][theme.total_field] += float(values[theme.total_field])
 
-    counts_csv = RACE_DIR / f"municipality_{uf}_counts.csv"
+    out_dir = theme.output_dir
+    counts_csv = out_dir / f"municipality_{uf}_counts.csv"
     counts_csv.parent.mkdir(parents=True, exist_ok=True)
+    extra_fields = ["renda_media", "renda_mediana"] if theme.id == "income" else []
     with counts_csv.open("w", encoding="utf-8", newline="") as fh:
         writer = csv.DictWriter(
-            fh, fieldnames=["id_municipio", "sigla_uf", *RACES, "populacao"]
+            fh,
+            fieldnames=[
+                "id_municipio",
+                "sigla_uf",
+                *theme.categories,
+                theme.total_field,
+                *extra_fields,
+            ],
         )
         writer.writeheader()
         for mun, counts in sorted(agg.items()):
-            pop = int(sum(counts[r] for r in RACES))
             writer.writerow(
                 {
                     "id_municipio": mun,
                     "sigla_uf": uf,
-                    "populacao": pop,
-                    **{r: int(counts[r]) for r in RACES},
+                    **{category: int(counts[category]) for category in theme.categories},
+                    **metrics[mun],
                 }
             )
-    print(f"wrote {counts_csv} municipalities={len(agg)}")
+    print(f"wrote {counts_csv} theme={theme.id} municipalities={len(agg)}")
 
 
 def ensure_malha(uf: str):
@@ -81,9 +119,30 @@ def ensure_malha(uf: str):
     return find_shp(dest_dir)
 
 
-def mapshaper_join(uf: str, shp) -> None:
-    counts_csv = RACE_DIR / f"municipality_{uf}_counts.csv"
-    out_path = RACE_DIR / f"municipality_{uf}.geojson"
+def enrich_race_hover(uf: str, counts_csv) -> None:
+    base = RACE_DIR / f"municipality_{uf}.geojson"
+    if not base.exists():
+        return
+    temp = RACE_DIR / f"municipality_{uf}_enriched.geojson"
+    run_mapshaper(
+        [
+            str(base),
+            "-join",
+            str(counts_csv),
+            "keys=id_municipio,id_municipio",
+            "string-fields=id_municipio",
+            "force",
+            "-o",
+            "format=geojson",
+            str(temp),
+        ]
+    )
+    temp.replace(base)
+
+
+def mapshaper_join(uf: str, shp, theme: Theme) -> None:
+    counts_csv = theme.output_dir / f"municipality_{uf}_counts.csv"
+    out_path = theme.output_dir / f"municipality_{uf}.geojson"
     run_mapshaper(
         [
             str(shp),
@@ -101,19 +160,25 @@ def mapshaper_join(uf: str, shp) -> None:
         ]
     )
     print(f"wrote {out_path}")
+    if theme.id != "race":
+        enrich_race_hover(uf, counts_csv)
 
 
 def main(argv: list[str] | None = None) -> None:
     args = argv if argv is not None else sys.argv[1:]
-    if len(args) != 1:
-        raise SystemExit(f"Usage: {sys.argv[0]} <UF>")
+    if not 1 <= len(args) <= 2:
+        raise SystemExit(f"Usage: {sys.argv[0]} <UF> [race|income|deaths]")
     uf = parse_uf(args[0])
-    if not CSV_PATH.exists():
-        raise SystemExit(f"Missing national race CSV: {CSV_PATH}")
-    aggregate_counts(uf)
+    theme = get_theme(args[1] if len(args) > 1 else None)
+    ensure_theme_source(theme)
+    ensure_municipality_source(theme)
+    aggregate_counts(uf, theme)
     shp = ensure_malha(uf)
-    mapshaper_join(uf, shp)
-    merge_hover()
+    mapshaper_join(uf, shp, theme)
+    # Theme builds are batched; `python3 scripts/ibge_uf.py` performs one
+    # national hover rebuild after all theme fields have been appended.
+    if theme.id == "race":
+        merge_hover()
 
 
 if __name__ == "__main__":
