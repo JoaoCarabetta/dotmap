@@ -163,7 +163,7 @@ This mapping is the product default (`circle-color` match + legend swatches) and
 
 # Map chrome
 
-The map is full-bleed (`#map` is `100vw` / `100vh`). There is **no** fixed header and **no left icon rail**. Desktop chrome is **one floating panel** top-left (`.chrome-stack` → `.intro-card`, 14px inset) plus a slim full-width footer (~32px). The old bottom-left legend card is gone — the legend moved into the panel, so the map's lower-left quadrant stays clear. Zoom `+/-` stays at the bottom-right, just above the footer. The first camera uses the Brazil bounds `[[-74, -34], [-32, 6]]`; narrow portrait screens keep that center at zoom 3.01 so the z3 dots remain visible. Search still uses the RJ bbox.
+The map is full-bleed (`#map` is `100vw` / `100vh`). There is **no** fixed header and **no left icon rail**. Desktop chrome is **one floating panel** top-left (`.chrome-stack` → `.intro-card`, 14px inset) plus a slim full-width footer (~32px). The old bottom-left legend card is gone — the legend moved into the panel, so the map's lower-left quadrant stays clear. Zoom `+/-` stays at the bottom-right, just above the footer. The first camera uses the Brazil bounds `[[-74, -34], [-32, 6]]`; narrow portrait screens keep that center at zoom 3.01 so the z3 dots remain visible. Search uses the same national box (flattened to Mapbox `[minLng, minLat, maxLng, maxLat]` → `[-74, -34, -32, 6]`).
 
 ## The panel (`.intro-card`)
 
@@ -184,7 +184,7 @@ The page `<title>` stays the plain **Onde o Brasil mora** (tab labels should not
 
 Do not say “um ponto por pessoa”: one dot is N units and N changes with zoom. Do not restore the old h1 “Distribuição Racial no Brasil” (too close to Pata’s 2015 *Mapa Racial do Brasil*). The income and mortality views rewrite the explanation and swap the h1's `por <label>` suffix; the product name before “por” never changes.
 
-Search sits in the floating pill **to the right of the panel** on desktop (on phones the same geocoder pins to the top of the screen — see the mobile chrome section), powered by [`mapbox-gl-geocoder`](https://github.com/mapbox/mapbox-gl-geocoder) v5 against Mapbox Temporary Geocoding — the same token as the basemap, no Google key. Placeholder: **Busque por cidade, bairro, estado ou CEP**. The existing search remains temporarily limited to an RJ bounding box (`[-44.89, -23.37, -40.75, -20.76]`) with proximity to Rio; this limitation is independent of thematic coverage. Selecting a result `fitBounds` the map; there is no persistent pin. Full Brazilian CEPs (`XXXXX-XXX`) are resolved via [BrasilAPI](https://brasilapi.com.br/) (`/cep/v2`). CEPs outside RJ are dropped.
+Search sits in the floating pill **to the right of the panel** on desktop (on phones the same geocoder pins to the top of the screen — see the mobile chrome section), powered by [`mapbox-gl-geocoder`](https://github.com/mapbox/mapbox-gl-geocoder) v5 against Mapbox Temporary Geocoding — the same token as the basemap, no Google key. Placeholder: **Busque por cidade, bairro, estado ou CEP**. Results are Brazil-only (`countries: 'br'`) inside the national camera bbox (`[-74, -34, -32, 6]`), with proximity at the national camera center `[-51.9, -14.2]` rather than Rio. Selecting a result `fitBounds` the map; there is no persistent pin. Full Brazilian CEPs (`XXXXX-XXX`) are resolved via [BrasilAPI](https://brasilapi.com.br/) (`/cep/v2`). Any UF with valid lat/lng inside the national box is accepted; CEPs are not dropped for being outside Rio.
 
 Do not restore a standalone search chrome.
 

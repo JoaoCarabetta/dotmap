@@ -113,5 +113,5 @@ Tiles gerados em `makefiles.sh` (não o hover): **setor agrupado** (`cluster` / 
 
 - Não apagar `tiles/` ou `data/tiles/*.mbtiles` sem confirmação: regenerar é caro.
 - Não tratar `docs/docs.md` e `TODO` como source of truth da densidade — o código em `makefiles.sh` e `index.html` é o que roda.
-- Pontos cobrem as 27 UFs. A busca ainda restringe resultados ao bbox do RJ. Hover no browser é `data/tiles/hover.mbtiles`, não o GeoJSON concatenado.
+- Pontos cobrem as 27 UFs. A busca é nacional (Brasil, `countries: 'br'`, bbox alinhado à câmera `[-74, -34, -32, 6]`); CEP via BrasilAPI não filtra por UF. Hover no browser é `data/tiles/hover.mbtiles`, não o GeoJSON concatenado.
 - Não inventar novas categorias raciais além das cinco do IBGE usadas aqui.
