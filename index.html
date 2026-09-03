@@ -1011,12 +1011,10 @@
     <!-- The hero line: the one number that keeps the map honest. Reports
          filters too ("Mostrando: Parda · …"), same contract as the sheet. -->
     <p class="dot-scale" id="dot-scale">1 ponto = 4.500 pessoas</p>
-    <!-- Óbitos is hidden for now (tiles/pipeline/config stay); to un-hide,
-         restore the button here and in #m-view-switcher and drop it from
-         HIDDEN_VIEWS in the script. -->
     <div class="view-switcher" id="view-switcher" role="group" aria-label="Visualização">
         <button type="button" data-view="race" aria-pressed="true">Raça</button>
         <button type="button" data-view="income" aria-pressed="false">Renda</button>
+        <button type="button" data-view="deaths" aria-pressed="false">Óbitos</button>
     </div>
     <p class="intro-explainer" id="intro-explainer">Cada ponto é um grupo de pessoas. A cor é a raça declarada no Censo Demográfico 2022 (IBGE). O número de pessoas por ponto muda com o zoom.</p>
     <p class="coverage-note" id="coverage-note" hidden></p>
@@ -1143,10 +1141,10 @@
             <p class="sheet-scale" id="sheet-scale">1 ponto = 4.500 pessoas</p>
         </div>
         <div class="sheet-content" id="sheet-content">
-            <!-- Óbitos hidden here too — the two switchers must always match. -->
             <div class="view-switcher" id="m-view-switcher" role="group" aria-label="Visualização">
                 <button type="button" data-view="race" aria-pressed="true">Raça</button>
                 <button type="button" data-view="income" aria-pressed="false">Renda</button>
+                <button type="button" data-view="deaths" aria-pressed="false">Óbitos</button>
             </div>
             <p class="sheet-explainer" id="sheet-explainer">Cada ponto é um grupo de pessoas. A cor é a raça declarada no Censo Demográfico 2022 (IBGE). O número de pessoas por ponto muda com o zoom.</p>
             <ul class="legend-races sheet-legend" id="m-legend"></ul>
@@ -1231,14 +1229,10 @@
             perDot: [200, 100, 50, 25, 12, 10, 8, 6, 4, 3, 2, 1]
         }
     };
-    // Views that exist in the pipeline/tiles but are hidden from the product
-    // UI for now. setView refuses them and persisted state falls back to race,
-    // so no chrome (switcher, legend, chips, title, scale, stats) can show them.
-    const HIDDEN_VIEWS = new Set(['deaths']);
     let currentView = 'race';
     try {
         const storedView = sessionStorage.getItem(VIEW_STORAGE);
-        if (VIEW_CONFIGS[storedView] && !HIDDEN_VIEWS.has(storedView)) currentView = storedView;
+        if (VIEW_CONFIGS[storedView]) currentView = storedView;
     } catch (e) { /* private mode */ }
     const activeCategories = {};
     Object.keys(VIEW_CONFIGS).forEach(function (view) {
@@ -2159,8 +2153,7 @@
     }
 
     function setView(view, moveCamera) {
-        // Hidden views stay unreachable even via console/dev paths.
-        if (!VIEW_CONFIGS[view] || HIDDEN_VIEWS.has(view)) return;
+        if (!VIEW_CONFIGS[view]) return;
         currentView = view;
         try {
             sessionStorage.setItem(VIEW_STORAGE, view);
