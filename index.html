@@ -1254,13 +1254,14 @@
     map.scrollZoom.disable();
 
     // Temporary Geocoding via the official plugin: city / CEP / address without a Google key.
-    // bbox + proximity keep results inside RJ, where the dots actually exist.
-    const RJ_BBOX = [-44.89, -23.37, -40.75, -20.76];
+    // Dots cover all 27 UFs, so search uses the same national box as the camera
+    // (Mapbox wants [minLng, minLat, maxLng, maxLat], not SW/NE pairs).
+    const BR_BBOX = [BRAZIL_BOUNDS[0][0], BRAZIL_BOUNDS[0][1], BRAZIL_BOUNDS[1][0], BRAZIL_BOUNDS[1][1]];
     // Mapbox postcode matching is weak for Brazilian XXXXX-XXX; remember the last query so we can drop those misses.
     let lastGeocoderQuery = '';
 
-    function inRjBbox(lng, lat) {
-        return lng >= RJ_BBOX[0] && lat >= RJ_BBOX[1] && lng <= RJ_BBOX[2] && lat <= RJ_BBOX[3];
+    function inBrazilBbox(lng, lat) {
+        return lng >= BR_BBOX[0] && lat >= BR_BBOX[1] && lng <= BR_BBOX[2] && lat <= BR_BBOX[3];
     }
 
     // BrasilAPI fills the 8-digit CEP gap; Mapbox still handles city / bairro / address.
@@ -1276,11 +1277,12 @@
                 return res.json();
             })
             .then(function (data) {
-                if (!data || data.state !== 'RJ') return [];
+                if (!data) return [];
                 const coords = data.location && data.location.coordinates;
                 const lng = parseFloat(coords && coords.longitude);
                 const lat = parseFloat(coords && coords.latitude);
-                if (!Number.isFinite(lng) || !Number.isFinite(lat) || !inRjBbox(lng, lat)) {
+                // Require a plotted point; Brazil-bbox is a safety net, not a UF gate.
+                if (!Number.isFinite(lng) || !Number.isFinite(lat) || !inBrazilBbox(lng, lat)) {
                     return [];
                 }
                 const formatted = digits.slice(0, 5) + '-' + digits.slice(5);
@@ -1311,8 +1313,10 @@
         language: 'pt-BR',
         countries: 'br',
         types: 'place,locality,neighborhood,postcode,address',
-        proximity: { longitude: -43.1729, latitude: -22.9068 },
-        bbox: RJ_BBOX,
+        // Same national center as the camera fallback — not Rio — so "Centro"
+        // / namesakes rank by country, not by one city.
+        proximity: { longitude: -51.9, latitude: -14.2 },
+        bbox: BR_BBOX,
         clearOnBlur: false,
         externalGeocoder: geocodeCep,
         // Hide Mapbox's near-miss postcodes when the user typed a full CEP.
