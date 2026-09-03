@@ -783,7 +783,8 @@
     function tileGeometrySource(zoom) {
         const z = parseInt(Number(zoom).toFixed(0), 10);
         if (z < 3) return '—';
-        if (z <= 6) return 'município';
+        // z3–6 scatter inside density-clustered setores, not the município polygon.
+        if (z <= 6) return 'setor agrupado';
         if (z <= 14) return 'setor';
         // Camera maxZoom 15 overzooms the z=14 census tiles; nothing is generated at 15.
         return 'setor (overzoom)';
@@ -793,10 +794,10 @@
     function peoplePerDot(zoom) {
         switch (parseInt(Number(zoom).toFixed(0), 10)) {
             case 2:
-            case 3: return 24000;
-            case 4: return 12000;
-            case 5: return 6000;
-            case 6: return 3000;
+            case 3: return 4500;
+            case 4: return 2000;
+            case 5: return 900;
+            case 6: return 400;
             case 7: return 150;
             case 8: return 120;
             case 9: return 90;

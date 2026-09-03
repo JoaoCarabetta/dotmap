@@ -7,7 +7,7 @@ How to run the map on this machine. Verified 2026-09-02 with per-UF tiles under 
 In the repo:
 
 - `index.html` (map UI; Mapbox **light-v10** basemap with symbol/label layers hidden; opens on Brazil via `fitBounds`, not Rio)
-- `tiles/{UF}/zoom3-3` … `tiles/{UF}/zoom14-14` (per-UF MBTiles; 27 UFs; 3–6 are municipality dots)
+- `tiles/{UF}/zoom3-3` … `tiles/{UF}/zoom14-14` (per-UF MBTiles; 27 UFs; 3–6 clustered setor)
 - `config.json` (expects a merged file at `data/tiles/censo2022.mbtiles`)
 
 Not in git (`data/` is missing on a fresh clone):
@@ -28,7 +28,7 @@ Not in git (`data/` is missing on a fresh clone):
 
 `mapshaper` is only needed to **regenerate** dots via `makefiles.sh`, not to serve existing tiles.
 
-Do **not** run `./makefiles.sh` just to view the map. The script requires a UF argument (`./makefiles.sh RR`) and needs GeoJSON under `data/` that is not in git. A full run regenerates 7–14 for **that UF only**; other states in `tiles/` stay put. To rebuild only the municipal zooms: `./makefiles.sh RR 3,4,5,6`.
+Do **not** run `./makefiles.sh` just to view the map. The script requires a UF argument (`./makefiles.sh RR`) and needs GeoJSON under `data/` that is not in git. A full run regenerates 7–14 for **that UF only**; other states in `tiles/` stay put. To rebuild only clustered z3–6: `python3 scripts/build_density_clusters.py RR` then `./makefiles.sh RR 3,4,5,6`. For all 27 UFs, set `SKIP_TILE_JOIN=1` per UF and run one `tile-join` at the end.
 
 ## Serve existing tiles (reproduced path)
 
@@ -78,13 +78,15 @@ Needs GCP access to `rj-escritorio-dev` and raw files that live only under `data
 ```sh
 python3 scripts/build_municipality.py RR
 python3 scripts/build_census_tract.py RR
+python3 scripts/build_density_clusters.py RR
 ```
 
 3. Generate dots and MBTiles for that UF. A full run regenerates 7–14 for that state only:
 
 ```sh
 ./makefiles.sh RR            # all zooms 3–14 for RR, then tile-join every UF
-./makefiles.sh RR 3,4,5,6    # municipal zooms only
+./makefiles.sh RR 3,4,5,6    # clustered zooms only
+# National z3–6 rebuild: SKIP_TILE_JOIN=1 ./makefiles.sh UF 3,4,5,6 per UF, then one join
 ```
 
 4. Then serve as in the section above. `makefiles.sh` already writes `data/tiles/censo2022.mbtiles`.

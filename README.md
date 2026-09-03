@@ -32,7 +32,7 @@ If 8000 is free you can use `uv run python -m http.server` instead (default 8000
 
 Without restoring extra files from elsewhere:
 
-- **Works:** light-v10 basemap (labels hidden) + colored race dots (zooms 3–14; 3–6 municipality-level). Coverage in git: **27 UFs** (nacional).
+- **Works:** light-v10 basemap (labels hidden) + colored race dots (zooms 3–14; 3–6 clustered setor). Coverage in git: **27 UFs** (nacional).
 - **404:** hover tiles (`data/tiles/hover.mbtiles`) until `python3 scripts/ibge_uf.py tiles`
 
 ## Create the dataset from scratch
@@ -44,6 +44,7 @@ Add or rebuild one UF (all 27 are already in `tiles/`, including SP and MG):
 ```sh
 python3 scripts/build_municipality.py RR
 python3 scripts/build_census_tract.py RR
+python3 scripts/build_density_clusters.py RR   # clustered setores for zooms 3–6
 ./makefiles.sh RR            # all zooms 3–14 for that UF, then tile-join every UF
-./makefiles.sh RR 3,4,5,6    # municipal zooms only
+./makefiles.sh RR 3,4,5,6    # clustered zooms only (needs the cluster GeoJSON)
 ```

@@ -6,16 +6,16 @@ This document describes the relationship between zoom levels and dot density in 
 
 ## Configuration Table
 
-Source of truth for **how tiles are generated** is [`makefiles.sh`](../makefiles.sh): `aggregation_levels` (`city` → `municipality_{UF}.geojson`, otherwise `census_tract_{UF}.geojson`) plus `per_dot_values`. The legend (`1 ponto = N pessoas`) and the localhost HUD **fonte** / pessoas/ponto use this same table. Zoom 15 has no tiles; N is the z14 value (20).
+Source of truth for **how tiles are generated** is [`makefiles.sh`](../makefiles.sh): `aggregation_levels` (`cluster` → `cluster_{UF}_zN.geojson` at z3–6, otherwise `census_tract_{UF}.geojson`) plus `per_dot_values`. Municipality GeoJSON is hover-only. The legend (`1 ponto = N pessoas`) and the localhost HUD **fonte** / pessoas/ponto use this same table. Zoom 15 has no tiles; N is the z14 value (20).
 
 ### Geometry source by zoom (`makefiles.sh`)
 
 | Zoom | Geometry source | `per_dot` (people per dot) |
 |------|-----------------|----------------------------|
-| 3 | município (`city` → `municipality_*.geojson`) | 24 000 |
-| 4 | município (`city`) | 12 000 |
-| 5 | município (`city`) | 6 000 |
-| 6 | município (`city`) | 3 000 |
+| 3 | setor agrupado (`cluster` → `cluster_*_z3.geojson`) | 4 500 |
+| 4 | setor agrupado (`cluster_*_z4.geojson`) | 2 000 |
+| 5 | setor agrupado (`cluster_*_z5.geojson`) | 900 |
+| 6 | setor agrupado (`cluster_*_z6.geojson`) | 400 |
 | 7 | setor censitário (`census` → `census_tract_*.geojson`) | 150 |
 | 8 | setor censitário | 120 |
 | 9 | setor censitário | 90 |
@@ -28,15 +28,15 @@ Source of truth for **how tiles are generated** is [`makefiles.sh`](../makefiles
 
 Hover on the map is a different cutoff: município polygons below zoom 10, setor from 10. Do not read hover as the tile-generation unit.
 
-The comment in `makefiles.sh` (“Zoom 3-6 = municipality; 7-14 = census tract”) matches the arrays. The next line (“per_dot doubles each step out from 4”) is only true for zooms 3–6; the jump from 3 000 (z6) to 150 (z7) is not a doubling.
+`per_dot` steps ~2.25× into z7 (4 500 / 2 000 / 900 / 400 / 150). Cluster polygons come from [`scripts/build_density_clusters.py`](../scripts/build_density_clusters.py): adjacent setores of the same density class (urban/povoado vs zona rural) merge until each cluster has about `per_dot` people, so dots stay on settlements instead of filling the município. All **27 UFs** have clustered tiles at zooms 3–6.
 
-| Zoom | Aggregation | People per dot (`per_dot`) | Approx. RJ dots | Circle radius (px) |
-|------|-------------|----------------------------|-----------------|--------------------|
-| 3 | Municipality (`city`) | 24 000 | ~670 | 0.96 |
-| 4 | Municipality (`city`) | 12 000 | ~1 300 | 0.96 |
-| 5 | Municipality (`city`) | 6 000 | ~2 700 | 0.96 |
-| 6 | Municipality (`city`) | 3 000 | ~5 300 | 0.96 |
-| 7 | Census tract | 150 | ~110 000 | 0.96 |
+| Zoom | Aggregation | People per dot (`per_dot`) | Approx. dots | Circle radius (px) |
+|------|-------------|----------------------------|--------------|--------------------|
+| 3 | Clustered setor | 4 500 | ~390 (SE) | 0.96 |
+| 4 | Clustered setor | 2 000 | ~930 (SE) | 0.96 |
+| 5 | Clustered setor | 900 | ~2 100 (SE) | 0.96 |
+| 6 | Clustered setor | 400 | ~4 600 (SE) | 0.96 |
+| 7 | Census tract | 150 | ~14 000 (SE) / ~110 000 (RJ) | 0.96 |
 | 8 | Census tract | 120 | | 1.04 |
 | 9 | Census tract | 90 | | 1.12 |
 | 10 | Census tract | 70 | | 1.20 |
@@ -48,8 +48,8 @@ The comment in `makefiles.sh` (“Zoom 3-6 = municipality; 7-14 = census tract�
 
 ## Details
 
-- **Municipality (zoom 3–6):** Points are scattered inside each município. At zoom 3–4 the continent/country fits the screen; `per_dot` stays high so filled states read as clusters, not a blob. Towns smaller than `per_dot` can receive zero points.
-- **Census tract (zoom 7–14):** Higher precision. The jump from zoom 6 (~5k municipal dots in RJ) to zoom 7 (~110k setor dots in RJ) is intentional with the current pipeline; the original TODO table used city aggregation at zoom 7 (`per_dot` 2000) to soften that step.
+- **Clustered setor (zoom 3–6):** Adjacent census tracts of the same density class are dissolved until each polygon has about `per_dot` people (4 500 / 2 000 / 900 / 400). Dots stay on the urban/povoado footprint instead of filling the município. All 27 UFs use this level.
+- **Census tract (zoom 7–14):** One polygon per setor. z7 is 150 people/dot, so 6→7 is a ~2.7× refinement of the same settlement pattern.
 - Recorte atual dos pontos: **27 UFs** (cobertura nacional). Hover de município/setor vem de `data/tiles/hover.mbtiles` (não do GeoJSON concatenado): o `census_tract.geojson` nacional (~248 MB) trava o Mapbox no zoom alto.
 - The Mapbox map `minZoom` option is exclusive (`zoom > min`), so `index.html` sets it to **2** in order to reach the z=3 tiles. Camera `maxZoom` is **15** so the local Rio shortcut can overzoom; the vector source still advertises `minzoom: 3` / `maxzoom: 14` (no z=15 PBF).
 - The map **opens on Brazil as a whole**, not Rio: constructor fallback `[-51.9, -14.2]` at zoom 3.5, then `fitBounds` of `[[-74, -34], [-32, 6]]` on load so Norte/Sul stay on screen across viewports. Point tiles cover all 27 UFs. A `tile-join` without `--no-tile-size-limit` still drops the SP+MG overlap at z7 (XYZ `7/47/72`, ~508 KB vs the 500 KB default) and leaves São Paulo blank even though `tiles/SP/` is complete.
@@ -74,23 +74,19 @@ Contains demographic data at the census tract level with the following attribute
 - `parda`: Brown/Mixed population count
 - `indigena`: Indigenous population count
 
-### Municipality Level
+### Clustered setor (zooms 3–6)
 
-`output/tiles/race/municipality.geojson` (intermediate; the map reads `data/tiles/hover.mbtiles`)
-Contains aggregated demographic data at the municipality level with the following attributes:
-- `id_municipio`: Municipality code
-- `sigla_uf`: State code
-- `municipio`: Municipality name
-- `populacao`: Total population
-- `branca`: White population count
-- `preta`: Black population count
-- `amarela`: Asian population count
-- `parda`: Brown/Mixed population count
-- `indigena`: Indigenous population count
+`output/tiles/race/cluster_{UF}_z3.geojson` … `cluster_{UF}_z6.geojson` from [`scripts/build_density_clusters.py`](../scripts/build_density_clusters.py). Same race fields as municipality, plus:
+- `cluster_id`: `{UF}-z{zoom}-{n}`
+- `density_class`: `dense` (CD_SIT 1–3, 5–7) or `sparse` (8–9)
+- `sigla_uf`, `populacao`, five race counts (sums of member setores)
+
+Clusters may cross município borders inside the UF. They are placement polygons for `mapshaper -dots`, not a hover layer.
 
 ## Usage Notes
 - Census tract data is suitable for detailed local analysis
-- Municipality data is better for regional patterns and overview
+- Clustered setores keep coarse-zoom dots on settlements
+- Municipality polygons are hover-only (z3–9), not a dot-placement unit
 - All population counts are absolute numbers
 
 # Interactive Race Filter
@@ -170,7 +166,7 @@ On ≤640px the intro card can shrink so it does not collide with the bottom-lef
 A compact HUD is injected only on loopback hosts (`localhost`, `127.0.0.1`, `::1`, `*.localhost`). Production (`carabetta.xyz`) never gets the toggle or the panel.
 
 - Off by default. Toggle with the top-right **dev** button or `D` / `` ` `` (ignored while typing in the search field). `sessionStorage` key `dotmap-dev-panel` keeps it open across refresh.
-- Live fields, updated on `move` / `zoom`: pessoas/ponto (same `peoplePerDot` table as the legend and `makefiles.sh`), center, bbox, hover layer (`município` below zoom 10, `setor` from 10), and **fonte** (tile-generation unit from `makefiles.sh`: município at z3–6, setor at z7–14, setor overzoom at 15). Fonte is not hover.
+- Live fields, updated on `move` / `zoom`: pessoas/ponto (same `peoplePerDot` table as the legend and `makefiles.sh`), center, bbox, hover layer (`município` below zoom 10, `setor` from 10), and **fonte** (tile-generation unit from `makefiles.sh`: setor agrupado at z3–6, setor at z7–14, setor overzoom at 15). Fonte is not hover.
 - **Zoom** and **raio** are editable (localhost only). Zoom is a slider + number (2–15) that calls `map.setZoom`. Raio is a **multiplier** (0.5×–3×, default 1) on top of the coded interpolate (so the z13 ×1.5 bump stays). `reset` returns the multiplier to 1. The effective px is shown next to the control. Multiplier is stored in `sessionStorage` key `dotmap-dev-radius-mult`. Keyboard shortcuts ignore these inputs the same way as the geocoder.
 - **Cores** (localhost only): a select of 5-hue presets mapped to `branca`, `preta`, `amarela`, `parda`, `indigena`. Applying a palette updates the points `circle-color` match and the legend swatches. Presets: **Atual** (product default — ColorBrewer Set1 hues permuted from HUD test), **Dark2** (ColorBrewer), **Set1** (ColorBrewer, unpermuted), **Okabe–Ito** (colorblind-safer; skips `#F0E442` because it vanishes on light-v10), **Print** (high-contrast), **Terra** (muted earth tones). **permutar** rotates assignment (each race takes the next of the same 5 hues; 5 steps, not 5! buttons). **embaralhar** shuffles those 5 hues once. **reset** restores the selected palette’s default mapping. Compact swatch + hex list shows the current key → color. Stored in `sessionStorage` as `dotmap-dev-palette`, `dotmap-dev-permute` (rotation index 0–4), and `dotmap-dev-hues` (working order after shuffle). Production (`carabetta.xyz`) never loads this UI or these keys.
 - Camera jumps (localhost only, ignored while typing in search): **1** Brasil (`fitBounds` of the default country bbox), **2** Rio center `[-43.1729, -22.9068]` at zoom **15**. Same actions as the two HUD buttons.

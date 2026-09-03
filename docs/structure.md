@@ -19,6 +19,7 @@ dotmap/
 │   ├── ibge_uf.py                # UF codes, IBGE download, hover merge + tiles
 │   ├── build_municipality.py     # National race CSV + malha → municipality_{UF}.geojson
 │   ├── build_census_tract.py     # National race CSV + setor malha → census_tract_{UF}.geojson
+│   ├── build_density_clusters.py # Adjacent setores by density → cluster_{UF}_z3…z6.geojson
 │   └── build_municipality_rj.py  # Wrapper: build_municipality.py RJ
 ├── notebooks/
 │   └── treat_2022.ipynb      # Census + setor geometry → race GeoJSON
