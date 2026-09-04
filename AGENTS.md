@@ -35,7 +35,7 @@ A página fica em `http://localhost:8000` (`python3 scripts/serve.py --port 8001
 
 Sem restaurar arquivos extras: pontos funcionam; hover (`data/tiles/hover.pmtiles`) dá 404 até `python3 scripts/ibge_uf.py tiles`. Detalhes em `docs/local-setup.md`.
 
-Público: https://carabetta.xyz/dataviz/brazildots/ (repo `carabetta.xyz`). O HTML pede `data/tiles/*.pmtiles` relativo à página; no VPS servir os arquivos como estáticos com `Accept-Ranges: bytes` e `gzip off` — o container tileserver-gl-light deixa de ser necessário.
+Público: https://carabetta.xyz/dotsbr/ (repo `carabetta.xyz`; o slug antigo `/dataviz/brazildots/` redireciona). Push em `main` ou `master` neste repo publica o `index.html` (`.github/workflows/deploy.yml`). O HTML pede `data/tiles/*.pmtiles` relativo à página; no VPS servir os arquivos como estáticos com `Accept-Ranges: bytes` e `gzip off` — o container tileserver-gl-light deixa de ser necessário. Detalhes em [`docs/deploy.md`](docs/deploy.md).
 
 Não rode `./makefiles.sh` só para visualizar: exige UF (`./makefiles.sh RR`), precisa de GeoJSON que não está no git, e um run completo regenera 7–14 daquela UF (caro). Tiles de outras UFs não são apagados. Para só 3–6: `python3 scripts/build_density_clusters.py RR` e `./makefiles.sh RR 3,4,5,6`. Loop nacional: `SKIP_TILE_JOIN=1` por UF e um `tile-join` no fim.
 
@@ -60,7 +60,10 @@ Servidor: `python3 scripts/serve.py` (Range em `.pmtiles`). Alternativa: `uv run
 - `docs/docs.md` — zoom, densidade, schema demográfico, filtro na legenda, basemap **light-v10 sem labels e sem satellite**, chrome (painel único top-left, busca à direita, bottom sheet no mobile, rodapé slim; sem rail/FAB/zoom no mobile), ordem da legenda de raça parda → branca → preta → indígena → amarela, Óbitos oculto na UI, painel dev localhost-only.
 - `docs/fontes.md` — URLs e caveats dos arquivos brutos do IBGE (raça nacional já baixada).
 - `docs/local-setup.md` — como juntar os tiles versionados e servir o mapa.
+- `docs/deploy.md` — CI (`main`/`master` → prod) e o path público `/dotsbr/`.
 - `docs/structure.md` — árvore do repositório.
+- `.github/workflows/deploy.yml` — push de `index.html` em `main`/`master` → VPS `/dotsbr/`.
+- `deploy.sh` — equivalente local; `./deploy.sh --tiles` sobe os PMTiles.
 - `debugger.html` — visualizador OpenLayers legado (XYZ na :8080); não é o caminho do mapa.
 - `tiles/` — MBTiles versionados por UF (`tiles/{UF}/zoomN-N/tiles.mbtiles`). Cobertura atual: todas as 27 UFs (AC–TO, inclusive MG e SP).
 - `data/` — gitignored. GeoJSON e PMTiles nacionais mesclados não entram no git.

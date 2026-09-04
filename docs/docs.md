@@ -1,4 +1,4 @@
-Agent instructions for this repo live in [`AGENTS.md`](../AGENTS.md). Project layout is in [`structure.md`](structure.md). How to serve the map from the versioned per-UF MBTiles (joined to PMTiles) is in [`local-setup.md`](local-setup.md). The public page is [https://carabetta.xyz/dataviz/brazildots/](https://carabetta.xyz/dataviz/brazildots/).
+Agent instructions for this repo live in [`AGENTS.md`](../AGENTS.md). Project layout is in [`structure.md`](structure.md). How to serve the map from the versioned per-UF MBTiles (joined to PMTiles) is in [`local-setup.md`](local-setup.md). The public page is [https://carabetta.xyz/dotsbr/](https://carabetta.xyz/dotsbr/). How that URL is published (`main`/`master` → prod) is in [`deploy.md`](deploy.md).
 
 # Zoom Levels and Dot Density Configuration
 
@@ -196,7 +196,7 @@ A **click** on a polygon (desktop) additionally **docks the same numbers into th
 
 On phones (≤640px) a **tap** on a polygon runs the same lookup, but the result renders in the **docked stats card** (`#stats-dock`) fixed above the peeked sheet — never under the finger, never off-screen. The tapped polygon stays highlighted; **✕** or a tap on empty map/water dismisses. While the dock is open the chip rail hides (they share the same strip). `mousemove` is ignored on the phone layout so the synthesized mouse events of a tap cannot bypass the sheet-collapse behavior below.
 
-There is no logo. Zoom is the Mapbox `NavigationControl` at the bottom-right; the public page has no on-screen “Zoom level: N” badge. The public URL slug remains `brazildots`.
+There is no logo. Zoom is the Mapbox `NavigationControl` at the bottom-right; the public page has no on-screen “Zoom level: N” badge. The public URL slug is `dotsbr` (`/dataviz/brazildots/` 301s there).
 
 ## Mobile chrome (≤640px): the bottom sheet
 

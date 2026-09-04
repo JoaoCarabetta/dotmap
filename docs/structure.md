@@ -4,6 +4,9 @@
 dotmap/
 ├── AGENTS.md                 # Instructions for coding agents
 ├── README.md                 # How to build tiles and serve the map locally
+├── .github/workflows/deploy.yml  # main/master → https://carabetta.xyz/dotsbr/
+├── deploy.sh                 # rsync index.html (optional --tiles)
+├── deploy.env.example        # local SSH target; copy to gitignored deploy.env
 ├── index.html                # Map UI and all MapLibre + PMTiles logic
 ├── debugger.html             # Legacy OpenLayers XYZ inspector (not the map path)
 ├── server.py                 # Optional Flask static server (port 8000, Range for PMTiles)
@@ -31,6 +34,7 @@ dotmap/
 │   ├── docs.md               # Zoom, density, schema, one-panel + mobile sheet chrome, footer
 │   ├── fontes.md             # IBGE download URLs and raw-file caveats
 │   ├── local-setup.md        # How to merge tiles and serve locally
+│   ├── deploy.md             # CI and the public /dotsbr/ path
 │   └── structure.md          # This file
 ├── assets/                   # Optional extras (not in git; unused by the current UI)
 ├── tiles/                    # race MBTiles versioned as tiles/{UF}; income/deaths built locally

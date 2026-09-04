@@ -67,7 +67,7 @@ Sanity checks used in the reproduction:
 
 ## Public URL
 
-The map is published at [https://carabetta.xyz/dataviz/brazildots/](https://carabetta.xyz/dataviz/brazildots/). `index.html` resolves archives as `data/tiles/{name}.pmtiles` relative to the page, so production should copy those four files next to the deployed HTML (`/dataviz/brazildots/data/tiles/…`). Nginx must send `Accept-Ranges: bytes` and **not** gzip the `.pmtiles` body. The old `tileserver-gl-light` Docker container and `{z}/{x}/{y}.pbf` proxy are no longer required once those files are in place (follow-up in the `carabetta.xyz` repo).
+The map is published at [https://carabetta.xyz/dotsbr/](https://carabetta.xyz/dotsbr/). `index.html` resolves archives as `data/tiles/{name}.pmtiles` relative to the page, so production copies those four files next to the deployed HTML (`/dotsbr/data/tiles/…`). Nginx must send `Accept-Ranges: bytes` and **not** gzip the `.pmtiles` body. Push to `main` or `master` deploys the HTML; tile uploads stay a local `./deploy.sh --tiles`. See [`deploy.md`](deploy.md).
 
 ## Create the dataset from scratch (not reproduced here)
 

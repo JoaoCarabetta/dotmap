@@ -1189,7 +1189,7 @@
     mapboxgl.accessToken = MAPBOX_TOKEN;
 
     // Same-origin archive next to index.html: /data/tiles/foo.pmtiles locally,
-    // /dataviz/brazildots/data/tiles/foo.pmtiles on the public page.
+    // /dotsbr/data/tiles/foo.pmtiles on the public page.
     function pmtilesUrl(name) {
         const dir = location.pathname.replace(/[^/]*$/, '');
         return new URL('data/tiles/' + name + '.pmtiles', location.origin + dir).href;

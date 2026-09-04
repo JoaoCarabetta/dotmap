@@ -1,0 +1,56 @@
+# main/master == production for the public map at https://carabetta.xyz/dotsbr/
+# HTML only — PMTiles stay on the VPS (gitignored, ~700MB).
+name: Deploy production
+
+on:
+  push:
+    branches:
+      - master
+      - main
+    paths:
+      - index.html
+      - deploy.sh
+      - .github/workflows/deploy.yml
+  workflow_dispatch:
+
+concurrency:
+  group: dotsbr-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy dotsbr
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://carabetta.xyz/dotsbr/
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      - name: Trust VPS host key
+        env:
+          SSH_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy map HTML
+        env:
+          SSH_HOST: ${{ secrets.VPS_HOST }}
+          SSH_USER: ${{ secrets.VPS_USER }}
+          REMOTE_PATH: /var/www/carabetta.xyz/dotsbr
+        run: chmod +x deploy.sh && ./deploy.sh
+
+      - name: Smoke-check production
+        run: |
+          set -euo pipefail
+          code="$(curl -sI -o /tmp/dotsbr.hdr -w '%{http_code}' https://carabetta.xyz/dotsbr/)"
+          echo "GET /dotsbr/ → ${code}"
+          cat /tmp/dotsbr.hdr
+          test "$code" = "200"
