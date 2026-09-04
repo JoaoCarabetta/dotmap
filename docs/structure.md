@@ -5,9 +5,10 @@ dotmap/
 ├── AGENTS.md                 # Instructions for coding agents
 ├── README.md                 # How to build tiles and serve the map locally
 ├── .github/workflows/deploy.yml  # main/master → https://carabetta.xyz/dotsbr/
-├── deploy.sh                 # rsync index.html (optional --tiles)
+├── deploy.sh                 # rsync index.html + og.jpg (optional --tiles)
 ├── deploy.env.example        # local SSH target; copy to gitignored deploy.env
-├── index.html                # Map UI and all MapLibre + PMTiles logic
+├── index.html                # Map UI, Open Graph tags, share card, MapLibre + PMTiles logic
+├── og.jpg                    # 1200×630 Open Graph / WhatsApp share image
 ├── debugger.html             # Legacy OpenLayers XYZ inspector (not the map path)
 ├── server.py                 # Optional Flask static server (port 8000, Range for PMTiles)
 ├── config.json               # Unused tileserver-gl leftover

@@ -1,5 +1,5 @@
 # main/master == production for the public map at https://carabetta.xyz/dotsbr/
-# HTML only — PMTiles stay on the VPS (gitignored, ~700MB).
+# HTML + og.jpg share card — PMTiles stay on the VPS (gitignored, ~700MB).
 name: Deploy production
 
 on:
@@ -9,6 +9,7 @@ on:
       - main
     paths:
       - index.html
+      - og.jpg
       - deploy.sh
       - .github/workflows/deploy.yml
   workflow_dispatch:

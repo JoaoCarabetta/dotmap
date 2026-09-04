@@ -49,7 +49,7 @@ These are independent units and must not reuse the race legend. Income (~72.4M h
 | 13 | 8 | 2 |
 | 14–15 | 7 | 1 |
 
-Income categories use `V06006` divided by the 2022 minimum wage (R$ 1,212): up to 1, 1–2, 2–3, 3–5, 5–10, and over 10 minimum wages, plus unavailable. All household dots in a setor share its median-income category; the map does not infer household-level income.
+Income categories use `V06006` divided by the 2022 minimum wage (R$ 1,212): up to 1, 1–2, 2–3, 3–5, 5–10, and over 10 minimum wages, plus unavailable. All household dots in a setor share its median-income category; the map does not infer household-level income. The ColorBrewer RdBu ramp is inverted: **poor = red, rich = blue** (`#b2182b` → `#2166ac`; `income_sem_dado` stays `#777777`).
 
 Mortality categories are `0–14`, `15–29`, `30–59`, `60+`, and `idade suprimida`. The last category is required because IBGE suppresses detailed-age cells much more often than sex totals. Nationally, about 3.63M deaths have a visible sex total and 1.91M have a visible detailed age.
 
@@ -159,7 +159,19 @@ Hover outlines on `setores-border` and `municipios-border` are `#202124` with an
 | `parda` | `#e41a1c` | red |
 | `indigena` | `#984ea3` | purple |
 
-This mapping is the product default (`circle-color` match + legend swatches) and HUD **Atual**. Production users get it with no HUD. Do not restore the old red/gold/mint set (`#fb3640` / `#d4b000` / `#89ffa7` / `#3899c9` / `#e8800c`). The single panel, the search field, and the slim footer keep light chrome (white surfaces, dark text) on top of the light map.
+Income (ColorBrewer RdBu inverted — low = red, high = blue):
+
+| Key | Hex | Why |
+|---|---|---|
+| `income_ate_1sm` | `#b2182b` | darkest red — até 1 SM |
+| `income_1_2sm` | `#d6604d` | |
+| `income_2_3sm` | `#f4a582` | |
+| `income_3_5sm` | `#92c5de` | |
+| `income_5_10sm` | `#4393c3` | |
+| `income_mais_10sm` | `#2166ac` | darkest blue — mais de 10 SM |
+| `income_sem_dado` | `#777777` | unavailable median |
+
+This mapping is the product default (`circle-color` match + legend swatches) and HUD **Atual**. Production users get it with no HUD. Do not restore the old red/gold/mint set (`#fb3640` / `#d4b000` / `#89ffa7` / `#3899c9` / `#e8800c`) or the previous income ramp that painted poor blue and rich red. The single panel, the search field, and the slim footer keep light chrome (white surfaces, dark text) on top of the light map.
 
 # Map chrome
 
@@ -169,7 +181,7 @@ The map is full-bleed (`#map` is `100vw` / `100vh`). There is **no** fixed heade
 
 White rounded card, top-left, story-first — the mobile sheet's reading order applied to desktop:
 
-1. **h1 with the active lens**: `dotsbr por Raça/Renda` (`#intro-title`, rewritten live by `setView`, same "por <label>" pattern as the mobile sheet title; Óbitos would follow the same pattern when un-hidden).
+1. **h1 with the active lens**: `dotsbr por Raça/Renda` (`#intro-title`, rewritten live by `setView`, same "por <label>" pattern as the mobile sheet title; Óbitos would follow the same pattern when un-hidden). A **Compartilhar** button sits on the same row (`#desk-share`) — see [Share button](#share-button).
 2. **Hero scale line** (`#dot-scale`, ~15px semibold): `1 ponto = N unidades`, updated on zoom and prefixed with filter state exactly like the sheet headline (`Mostrando: Parda · …` when soloed, `Filtro: k de n categorias · …` for partial sets). It was an 11px footnote in the old legend card; it is the number that keeps the map honest, so it leads.
 3. **Raça / Renda** switcher (view stored as `dotmap-view`; switching does not move the camera; Óbitos hidden — see the views note at the top).
 4. Explainer.
@@ -178,11 +190,42 @@ White rounded card, top-left, story-first — the mobile sheet's reading order a
 
 Search is **not** inside the panel: the geocoder floats as a white pill **immediately to the right of the panel, top-aligned** (`#desk-search`, anchored to the stack with `left: calc(100% + 12px)` so it tracks the card width). Suggestions drop over the map, never clipped by the card.
 
-The page `<title>` stays the plain **dotsbr** (tab labels should not churn on view switch); only the h1 carries the lens suffix. The explainer (`p.intro-explainer`) is:
+The page `<title>` stays the plain **dotsbr** (tab labels should not churn on view switch); only the h1 carries the lens suffix. Share previews (WhatsApp, iMessage, Telegram, Slack) use the same name plus a static description and `og.jpg` — see [Link previews](#link-previews-whatsapp--imessage) below. The explainer (`p.intro-explainer`) is:
 
 **Cada ponto é um grupo de pessoas. A cor é a raça declarada no Censo Demográfico 2022 (IBGE). O número de pessoas por ponto muda com o zoom.**
 
 Do not say “um ponto por pessoa”: one dot is N units and N changes with zoom. Do not restore the old h1 “Distribuição Racial no Brasil” (too close to Pata’s 2015 *Mapa Racial do Brasil*) or the previous product name “Onde o Brasil mora”. The income and mortality views rewrite the explanation and swap the h1's `por <label>` suffix; the product name before “por” never changes.
+
+## Link previews (WhatsApp / iMessage)
+
+Crawlers do not run the map JS, so the share card is **static tags in `<head>`** plus `og.jpg` next to `index.html`:
+
+| Tag | Value |
+|---|---|
+| `og:title` / `<title>` | **dotsbr** |
+| `og:description` / `description` | **O Brasil em pontos. Aproxime o mapa — e escolha o que a cor conta.** (share hook, not the in-map explainer: race and income both color the dots, so the card must not lock to one view) |
+| `og:image` | `https://carabetta.xyz/dotsbr/og.jpg` (absolute; 1200×630 JPEG of the national race map, chrome hidden) |
+| `twitter:card` | `summary_large_image` (Slack / X also read this) |
+
+`og.jpg` is a crop of the live map at the Brazil frame (no panel, no search, no footer). Replace it the same way: hide chrome, screenshot, crop to 1200×630. WhatsApp caches the card hard — after a deploy, scrape again at [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/) or wait; sending the same URL in an old chat will keep the stale preview. Pasting the URL still uses this static card. The in-app **Compartilhar** button is a different path: it builds a JPEG of the *current* camera.
+
+## Share button
+
+Not a FAB (mobile chrome forbids on-map zoom/FAB). Same control, two mounts:
+
+- **Desktop:** `#desk-share` on the title row of `.intro-card`.
+- **Mobile:** `#m-share` in `#sheet-header`, right of the title, visible in **peek**. `pointerdown`/`click` stop at the button so the header drag and peek/half toggle do not fire.
+
+Tap composes a **4:5** JPEG (1080×1350) in Canvas 2D — not a DOM screenshot:
+
+| Band | Content |
+|---|---|
+| Map | `map.getCanvas()` of the current camera (filters and view included). Needs `preserveDrawingBuffer: true` or the frame is already cleared. |
+| Caption | `dotsbr por <view>`, the same `formatDotScale()` string as the hero line (including `Mostrando` / `Filtro`), swatches for **active** categories only, the share hook, `carabetta.xyz/dotsbr` |
+
+Município/setor numbers stay off the card. `html2canvas` is not used (WebGL + live chrome would fail or look messy).
+
+`navigator.share({ files, title, text })` when `canShare({ files })` — URL is **inside `text`** because iOS WhatsApp drops `url` when a file is present. Desktop / no-files: download `dotsbr.jpg` and copy the URL. If `toDataURL` throws (Mapbox raster tainted the canvas), share text+URL only so the button never dies.
 
 Search sits in the floating pill **to the right of the panel** on desktop (on phones the same geocoder pins to the top of the screen — see the mobile chrome section), powered by [`mapbox-gl-geocoder`](https://github.com/mapbox/mapbox-gl-geocoder) v5 against Mapbox Temporary Geocoding — the same token as the basemap, no Google key. Placeholder: **Busque por cidade, bairro, estado ou CEP**. Results are Brazil-only (`countries: 'br'`) inside the national camera bbox (`[-74, -34, -32, 6]`), with proximity at the national camera center `[-51.9, -14.2]` rather than Rio. Selecting a result `fitBounds` the map; there is no persistent pin. Full Brazilian CEPs (`XXXXX-XXX`) are resolved via [BrasilAPI](https://brasilapi.com.br/) (`/cep/v2`). Any UF with valid lat/lng inside the national box is accepted; CEPs are not dropped for being outside Rio.
 
@@ -208,12 +251,12 @@ The sheet snaps between three `translateY` offsets, recomputed from live heights
 
 | State | What shows | How you get there |
 |---|---|---|
-| **peek** | drag handle + **dotsbr por Raça/Renda** (title carries the active lens, updated live on view switch; label matches the switcher) + live `1 ponto = N unidades` line | drag down, tap header, or tap the map while open |
+| **peek** | drag handle + **dotsbr por Raça/Renda** (title carries the active lens, updated live on view switch; label matches the switcher) + live `1 ponto = N unidades` line + **Compartilhar** | drag down, tap header, or tap the map while open |
 | **half** (~52vh, ≤400px) | + Raça/Renda switcher, explainer | drag, or tap header from peek |
 | **full** (92dvh) | + 44px legend rows with **S** solo buttons, **credits** | drag up |
 
 - **First visit opens at half** so the story (title, scale, lens, explainer) shows once; afterwards the last snap state wins for the session (`sessionStorage` key `dotmap-sheet-state`).
-- Drag only works from the **header** (handle + title strip, `touch-action: none`); the content area keeps native scrolling, which only unlocks in the full state (`body.m-sheet-full`) so scroll and drag never fight.
+- Drag only works from the **header** (handle + title strip, `touch-action: none`); the **Compartilhar** button is the exception (`stopPropagation` + `touch-action: manipulation`). The content area keeps native scrolling, which only unlocks in the full state (`body.m-sheet-full`) so scroll and drag never fight.
 - Tapping the **map** while the sheet is at half/full collapses it to peek first; details come on the next tap.
 - The product name is never hidden — it is the first line of every state, suffixed with the active view (`#sheet-title`, e.g. **dotsbr por Renda**). The desktop `h1` (`#intro-title`) uses the same `por <label>` suffix; only the page `<title>` stays the plain product name.
 

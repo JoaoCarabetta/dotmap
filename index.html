@@ -5,6 +5,27 @@
     <title>dotsbr</title>
     <!-- viewport-fit=cover lets the map paint under the notch; safe-area insets keep the chrome out of it. -->
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+    <!-- WhatsApp / iMessage / Telegram read only these static tags — they
+         never run the map JS — so title, description and image have to live
+         in the HTML. Absolute URLs: crawlers will not resolve a relative
+         og:image against /dotsbr/. 1200×630 JPEG is the large-card size. -->
+    <meta name="description" content="O Brasil em pontos. Aproxime o mapa — e escolha o que a cor conta.">
+    <link rel="canonical" href="https://carabetta.xyz/dotsbr/">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="pt_BR">
+    <meta property="og:site_name" content="dotsbr">
+    <meta property="og:url" content="https://carabetta.xyz/dotsbr/">
+    <meta property="og:title" content="dotsbr">
+    <meta property="og:description" content="O Brasil em pontos. Aproxime o mapa — e escolha o que a cor conta.">
+    <meta property="og:image" content="https://carabetta.xyz/dotsbr/og.jpg">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Mapa do Brasil em pontos coloridos, a partir do Censo Demográfico 2022">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="dotsbr">
+    <meta name="twitter:description" content="O Brasil em pontos. Aproxime o mapa — e escolha o que a cor conta.">
+    <meta name="twitter:image" content="https://carabetta.xyz/dotsbr/og.jpg">
     <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
     <script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js"></script>
@@ -79,14 +100,58 @@
             font-family: var(--chrome-font);
         }
 
+        /* Title + share sit on one row so the control stays next to the name,
+           not a FAB on the map (mobile forbids on-map FABs). */
+        .intro-title-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
         /* Serif title so the left card reads like the reference, not a UI toolbar. */
         .intro-title {
             margin: 0;
+            flex: 1;
+            min-width: 0;
             font-family: var(--chrome-title-font);
             font-size: 26px;
             font-weight: 700;
             line-height: 1.15;
             color: #1a1a1a;
+        }
+
+        .share-btn {
+            flex: none;
+            box-sizing: border-box;
+            width: 36px;
+            height: 36px;
+            margin: -4px -6px 0 0;
+            padding: 0;
+            border: 0;
+            border-radius: 10px;
+            background: transparent;
+            color: #5f6368;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .share-btn:hover,
+        .share-btn:focus-visible {
+            background: #f1f3f4;
+            color: #202124;
+        }
+
+        .share-btn:disabled {
+            opacity: 0.45;
+            cursor: wait;
+        }
+
+        .share-btn svg {
+            width: 20px;
+            height: 20px;
+            display: block;
         }
 
         .intro-explainer {
@@ -759,6 +824,17 @@
                 background: #dadce0;
             }
 
+            .sheet-header-row {
+                display: flex;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .sheet-header-copy {
+                flex: 1;
+                min-width: 0;
+            }
+
             .sheet-title {
                 margin: 0;
                 font-family: var(--chrome-title-font);
@@ -766,6 +842,20 @@
                 font-weight: 700;
                 color: #1a1a1a;
                 line-height: 1.2;
+            }
+
+            /* 44px so the thumb hits it; stop the header drag from eating the tap. */
+            .m-chrome .share-btn {
+                width: 44px;
+                height: 44px;
+                margin: -2px -8px 0 0;
+                touch-action: manipulation;
+                cursor: pointer;
+            }
+
+            .m-chrome .share-btn svg {
+                width: 22px;
+                height: 22px;
             }
 
             /* The live scale is the headline number: always visible, even peeked. */
@@ -1025,7 +1115,14 @@
      corners. Mobile (≤640px) hides the whole stack and uses the sheet. -->
 <div class="chrome-stack" id="chrome-stack">
 <aside class="intro-card" id="intro-card" aria-label="Sobre o mapa">
-    <h1 class="intro-title" id="intro-title">dotsbr por Raça</h1>
+    <div class="intro-title-row">
+        <h1 class="intro-title" id="intro-title">dotsbr por Raça</h1>
+        <button type="button" class="share-btn" id="desk-share" aria-label="Compartilhar">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="currentColor" d="M12 3.2 16.2 7.4a1 1 0 0 1-1.4 1.4L13 6v8.5a1 1 0 1 1-2 0V6L9.2 8.8a1 1 0 1 1-1.4-1.4L12 3.2zM6 13a1 1 0 0 1 1 1v5h10v-5a1 1 0 1 1 2 0v5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-5a1 1 0 0 1 1-1z"/>
+            </svg>
+        </button>
+    </div>
     <!-- The hero line: the one number that keeps the map honest. Reports
          filters too ("Mostrando: Parda · …"), same contract as the sheet. -->
     <p class="dot-scale" id="dot-scale">1 ponto = 4.500 pessoas</p>
@@ -1160,8 +1257,17 @@
             <!-- Product name first, then the active lens ("por Raça/Renda/Óbitos",
                  same label as the switcher): the title is visible in every snap
                  state, so it must say what the map is showing. -->
-            <p class="sheet-title" id="sheet-title">dotsbr por Raça</p>
-            <p class="sheet-scale" id="sheet-scale">1 ponto = 4.500 pessoas</p>
+            <div class="sheet-header-row">
+                <div class="sheet-header-copy">
+                    <p class="sheet-title" id="sheet-title">dotsbr por Raça</p>
+                    <p class="sheet-scale" id="sheet-scale">1 ponto = 4.500 pessoas</p>
+                </div>
+                <button type="button" class="share-btn" id="m-share" aria-label="Compartilhar">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path fill="currentColor" d="M12 3.2 16.2 7.4a1 1 0 0 1-1.4 1.4L13 6v8.5a1 1 0 1 1-2 0V6L9.2 8.8a1 1 0 1 1-1.4-1.4L12 3.2zM6 13a1 1 0 0 1 1 1v5h10v-5a1 1 0 1 1 2 0v5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-5a1 1 0 0 1 1-1z"/>
+                    </svg>
+                </button>
+            </div>
         </div>
         <div class="sheet-content" id="sheet-content">
             <div class="view-switcher" id="m-view-switcher" role="group" aria-label="Visualização">
@@ -1208,6 +1314,9 @@
         maxZoom: 15,
         // MapLibre treats minZoom as inclusive; first point tiles are z=3.
         minZoom: 3,
+        // Keep the last WebGL frame readable so the share card can copy
+        // map.getCanvas() — the default buffer is cleared after paint.
+        preserveDrawingBuffer: true,
         // light-v10 JSON still uses mapbox:// for streets, sprite, and fonts.
         // MapLibre will not resolve those; rewrite to the Mapbox REST hosts.
         transformRequest: function (url) {
@@ -1228,6 +1337,9 @@
     const VIEW_STORAGE = 'dotmap-view';
     // Public name on the tab and in "por <lens>" titles. Repo and storage keys stay `dotmap`.
     const PRODUCT_NAME = 'dotsbr';
+    // Same hook as og:description — the share card must not lock to one view.
+    const SHARE_HOOK = 'O Brasil em pontos. Aproxime o mapa — e escolha o que a cor conta.';
+    const SHARE_PAGE_URL = 'https://carabetta.xyz/dotsbr/';
     const VIEW_CONFIGS = {
         race: {
             layer: 'points',
@@ -1252,13 +1364,15 @@
             label: 'Renda',
             unit: 'domicílios',
             explainer: 'Cada ponto representa um grupo de domicílios. A cor mostra a faixa da renda mediana mensal das pessoas responsáveis com rendimento no setor censitário (Censo Demográfico 2022, IBGE). O número de domicílios por ponto muda com o zoom.',
+            // ColorBrewer RdBu inverted so low income reads as red and high as
+            // blue (pobre = vermelho, rico = azul). Keys stay in SM order.
             categories: [
-                ['income_ate_1sm', 'Até 1 SM', '#2166ac'],
-                ['income_1_2sm', '1–2 SM', '#4393c3'],
-                ['income_2_3sm', '2–3 SM', '#92c5de'],
-                ['income_3_5sm', '3–5 SM', '#f4a582'],
-                ['income_5_10sm', '5–10 SM', '#d6604d'],
-                ['income_mais_10sm', 'Mais de 10 SM', '#b2182b'],
+                ['income_ate_1sm', 'Até 1 SM', '#b2182b'],
+                ['income_1_2sm', '1–2 SM', '#d6604d'],
+                ['income_2_3sm', '2–3 SM', '#f4a582'],
+                ['income_3_5sm', '3–5 SM', '#92c5de'],
+                ['income_5_10sm', '5–10 SM', '#4393c3'],
+                ['income_mais_10sm', 'Mais de 10 SM', '#2166ac'],
                 ['income_sem_dado', 'Sem dado', '#777777']
             ],
             perDot: [1500, 700, 300, 130, 50, 40, 30, 24, 17, 12, 8, 7]
@@ -1456,11 +1570,9 @@
         });
     }
 
-    function updateDotScale() {
-        // The scale copy tracks both zoom and view because units differ, and
-        // reports the active filter — on both layouts the line is the headline
-        // (panel hero on desktop, sheet subtitle on mobile), so it must not
-        // lie silently when categories are toggled off.
+    function formatDotScale() {
+        // Shared by the live headline and the share card so a filter never
+        // appears on one surface and not the other.
         const config = VIEW_CONFIGS[currentView];
         const scale = peoplePerDot(map.getZoom());
         const base = `1 ponto = ${scale.toLocaleString()} ${config.unit}`;
@@ -1472,9 +1584,18 @@
         } else if (active.size < config.categories.length) {
             prefix = 'Filtro: ' + active.size + ' de ' + config.categories.length + ' categorias · ';
         }
-        document.getElementById('dot-scale').textContent = prefix + base;
+        return prefix + base;
+    }
+
+    function updateDotScale() {
+        // The scale copy tracks both zoom and view because units differ, and
+        // reports the active filter — on both layouts the line is the headline
+        // (panel hero on desktop, sheet subtitle on mobile), so it must not
+        // lie silently when categories are toggled off.
+        const text = formatDotScale();
+        document.getElementById('dot-scale').textContent = text;
         const sheetScale = document.getElementById('sheet-scale');
-        if (sheetScale) sheetScale.textContent = prefix + base;
+        if (sheetScale) sheetScale.textContent = text;
     }
 
     // Country overview shared by startup and the dev HUD jump. Narrow portrait
@@ -2257,6 +2378,244 @@
     });
     renderLegend();
 
+    // ------- SHARE CARD --------
+    // Compose a 4:5 JPEG from the live WebGL canvas + a caption (not a DOM
+    // screenshot: the sheet/search/chips would cover the map). Sync toDataURL
+    // keeps iOS navigator.share() inside the same user-gesture turn.
+
+    function wrapShareText(ctx, text, maxWidth) {
+        const words = text.split(/\s+/);
+        const lines = [];
+        let line = '';
+        words.forEach(function (word) {
+            const test = line ? line + ' ' + word : word;
+            if (ctx.measureText(test).width > maxWidth && line) {
+                lines.push(line);
+                line = word;
+            } else {
+                line = test;
+            }
+        });
+        if (line) lines.push(line);
+        return lines;
+    }
+
+    function layoutShareLegend(ctx, items, maxWidth) {
+        const gapX = 28;
+        const swatch = 18;
+        const rows = [[]];
+        let rowW = 0;
+        items.forEach(function (item) {
+            const w = swatch + 10 + ctx.measureText(item[1]).width;
+            const cur = rows[rows.length - 1];
+            const need = (cur.length ? gapX : 0) + w;
+            if (cur.length && rowW + need > maxWidth) {
+                rows.push([item]);
+                rowW = w;
+            } else {
+                cur.push(item);
+                rowW += need;
+            }
+        });
+        return { rows: rows, gapX: gapX, swatch: swatch };
+    }
+
+    function composeShareCardFile() {
+        const config = VIEW_CONFIGS[currentView];
+        const active = activeCategories[currentView];
+        const items = config.categories.filter(function (item) {
+            return active.has(item[0]);
+        });
+        const W = 1080;
+        const H = 1350;
+        const pad = 48;
+        const canvas = document.createElement('canvas');
+        canvas.width = W;
+        canvas.height = H;
+        const ctx = canvas.getContext('2d');
+        const titleFont = '700 42px ' + getComputedStyle(document.documentElement)
+            .getPropertyValue('--chrome-title-font').trim();
+        const bodyFont = '500 24px ' + getComputedStyle(document.documentElement)
+            .getPropertyValue('--chrome-font').trim();
+        const hookFont = '400 26px ' + getComputedStyle(document.documentElement)
+            .getPropertyValue('--chrome-font').trim();
+        const urlFont = '500 22px ' + getComputedStyle(document.documentElement)
+            .getPropertyValue('--chrome-font').trim();
+        const legendFont = '500 22px ' + getComputedStyle(document.documentElement)
+            .getPropertyValue('--chrome-font').trim();
+
+        ctx.font = bodyFont;
+        const scaleLines = wrapShareText(ctx, formatDotScale(), W - pad * 2);
+        ctx.font = hookFont;
+        const hookLines = wrapShareText(ctx, SHARE_HOOK, W - pad * 2);
+        ctx.font = legendFont;
+        const legend = layoutShareLegend(ctx, items, W - pad * 2);
+
+        const titleH = 50;
+        const scaleH = scaleLines.length * 32;
+        const legendH = Math.max(1, legend.rows.length) * 36;
+        const hookH = hookLines.length * 34;
+        const urlH = 28;
+        const captionH = pad + titleH + 8 + scaleH + 20 + legendH + 24 + hookH + 16 + urlH + pad;
+        const mapH = Math.max(720, H - captionH);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, W, H);
+
+        const src = map.getCanvas();
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, 0, W, mapH);
+        ctx.clip();
+        const scale = Math.max(W / src.width, mapH / src.height);
+        const tw = src.width * scale;
+        const th = src.height * scale;
+        ctx.drawImage(src, (W - tw) / 2, (mapH - th) / 2, tw, th);
+        ctx.restore();
+
+        const fadeH = 48;
+        const fade = ctx.createLinearGradient(0, mapH - fadeH, 0, mapH);
+        fade.addColorStop(0, 'rgba(255,255,255,0)');
+        fade.addColorStop(1, 'rgba(255,255,255,1)');
+        ctx.fillStyle = fade;
+        ctx.fillRect(0, mapH - fadeH, W, fadeH);
+
+        let y = mapH + pad;
+        ctx.fillStyle = '#1a1a1a';
+        ctx.font = titleFont;
+        ctx.textBaseline = 'top';
+        ctx.fillText(PRODUCT_NAME + ' por ' + config.label, pad, y);
+        y += titleH + 8;
+
+        ctx.fillStyle = '#202124';
+        ctx.font = bodyFont;
+        scaleLines.forEach(function (line) {
+            ctx.fillText(line, pad, y);
+            y += 32;
+        });
+        y += 20;
+
+        ctx.font = legendFont;
+        ctx.textBaseline = 'middle';
+        legend.rows.forEach(function (row) {
+            let x = pad;
+            row.forEach(function (item) {
+                ctx.fillStyle = item[2];
+                ctx.beginPath();
+                ctx.arc(x + legend.swatch / 2, y, legend.swatch / 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#202124';
+                ctx.fillText(item[1], x + legend.swatch + 10, y);
+                x += legend.swatch + 10 + ctx.measureText(item[1]).width + legend.gapX;
+            });
+            y += 36;
+        });
+        y += 24;
+
+        ctx.fillStyle = '#5f6368';
+        ctx.font = hookFont;
+        ctx.textBaseline = 'top';
+        hookLines.forEach(function (line) {
+            ctx.fillText(line, pad, y);
+            y += 34;
+        });
+        y += 16;
+        ctx.font = urlFont;
+        ctx.fillText('carabetta.xyz/dotsbr', pad, y);
+
+        // Sync so iOS still treats this as the tap's user gesture.
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        const bin = atob(dataUrl.split(',')[1]);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return new File([bytes], 'dotsbr.jpg', { type: 'image/jpeg' });
+    }
+
+    function shareTextPayload() {
+        return {
+            title: PRODUCT_NAME,
+            text: SHARE_HOOK + '\n' + SHARE_PAGE_URL
+        };
+    }
+
+    function downloadShareFile(file) {
+        const url = URL.createObjectURL(file);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = file.name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+    }
+
+    function copyShareUrl() {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(SHARE_PAGE_URL).catch(function () {});
+        }
+        return Promise.resolve();
+    }
+
+    function canShareFiles(file) {
+        if (!navigator.share || !navigator.canShare) return false;
+        try {
+            return navigator.canShare({ files: [file] });
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function shareCurrentView() {
+        const buttons = document.querySelectorAll('.share-btn');
+        buttons.forEach(function (btn) { btn.disabled = true; });
+        const finish = function () {
+            buttons.forEach(function (btn) { btn.disabled = false; });
+        };
+
+        let file = null;
+        try {
+            file = composeShareCardFile();
+        } catch (err) {
+            // Tainted canvas (Mapbox raster without CORS) — still share the hook.
+            file = null;
+        }
+
+        const payload = shareTextPayload();
+        if (file && canShareFiles(file)) {
+            navigator.share(Object.assign({ files: [file] }, payload)).then(finish, function (err) {
+                if (err && err.name === 'AbortError') {
+                    finish();
+                    return;
+                }
+                downloadShareFile(file);
+                copyShareUrl();
+                finish();
+            });
+            return;
+        }
+        if (navigator.share) {
+            navigator.share(payload).then(finish, function (err) {
+                if (err && err.name !== 'AbortError') copyShareUrl();
+                finish();
+            });
+            return;
+        }
+        if (file) downloadShareFile(file);
+        copyShareUrl();
+        finish();
+    }
+
+    document.querySelectorAll('.share-btn').forEach(function (btn) {
+        btn.addEventListener('pointerdown', function (e) {
+            e.stopPropagation();
+        });
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            shareCurrentView();
+        });
+    });
+
     // ------- MOBILE SHEET (≤640px) --------
     // Waze grammar: one bottom sheet with three snap states, dragged by its
     // header via pointer events + CSS transforms (no libraries). Desktop keeps
@@ -2344,6 +2703,9 @@
         let dragMoved = false;
 
         sheetHeaderEl.addEventListener('pointerdown', function (e) {
+            // Share is in the header so it stays visible in peek; it must not
+            // start a drag or toggle the sheet.
+            if (e.target.closest('.share-btn')) return;
             dragging = true;
             dragMoved = false;
             dragStartY = e.clientY;
@@ -2386,7 +2748,8 @@
         sheetHeaderEl.addEventListener('pointercancel', endDrag);
 
         // Tap on the header toggles the two everyday states; full is a drag away.
-        sheetHeaderEl.addEventListener('click', function () {
+        sheetHeaderEl.addEventListener('click', function (e) {
+            if (e.target.closest('.share-btn')) return;
             if (dragMoved) {
                 dragMoved = false;
                 return;

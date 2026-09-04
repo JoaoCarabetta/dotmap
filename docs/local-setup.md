@@ -6,7 +6,8 @@ How to run the map on this machine. Verified 2026-09-04 with per-UF tiles under 
 
 In the repo:
 
-- `index.html` (map UI; Mapbox **light-v10** basemap via the Style API, symbol/label layers hidden; opens on Brazil via `fitBounds`, not Rio)
+- `index.html` (map UI + Open Graph tags; Mapbox **light-v10** basemap via the Style API, symbol/label layers hidden; opens on Brazil via `fitBounds`, not Rio)
+- `og.jpg` (1200×630 share card for WhatsApp / iMessage; deployed next to the HTML)
 - `tiles/{UF}/zoom3-3` … `tiles/{UF}/zoom14-14` (per-UF race MBTiles; 27 UFs; 3–6 clustered setor)
 - Theme builders (`scripts/themes.py`, `makefiles.sh` with a theme arg). **Income/deaths per-UF MBTiles are not versioned** — generate them locally, then `tile-join` to PMTiles
 
