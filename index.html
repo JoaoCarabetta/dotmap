@@ -9,22 +9,22 @@
          never run the map JS — so title, description and image have to live
          in the HTML. Absolute URLs: crawlers will not resolve a relative
          og:image against /dotsbr/. 1200×630 JPEG is the large-card size. -->
-    <meta name="description" content="O Brasil em pontos. Aproxime o mapa — e escolha o que a cor conta.">
+    <meta name="description" content="O Brasil em pontos: cada ponto é um grupo de pessoas do Censo de 2022. Aproxime e veja o seu bairro.">
     <link rel="canonical" href="https://carabetta.xyz/dotsbr/">
     <meta property="og:type" content="website">
     <meta property="og:locale" content="pt_BR">
     <meta property="og:site_name" content="dotsbr">
     <meta property="og:url" content="https://carabetta.xyz/dotsbr/">
     <meta property="og:title" content="dotsbr">
-    <meta property="og:description" content="O Brasil em pontos. Aproxime o mapa — e escolha o que a cor conta.">
+    <meta property="og:description" content="O Brasil em pontos: cada ponto é um grupo de pessoas do Censo de 2022. Aproxime e veja o seu bairro.">
     <meta property="og:image" content="https://carabetta.xyz/dotsbr/og.jpg">
     <meta property="og:image:type" content="image/jpeg">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="Mapa do Brasil em pontos coloridos, a partir do Censo Demográfico 2022">
+    <meta property="og:image:alt" content="Mapa do Brasil em pontos coloridos, feito com dados do Censo de 2022">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="dotsbr">
-    <meta name="twitter:description" content="O Brasil em pontos. Aproxime o mapa — e escolha o que a cor conta.">
+    <meta name="twitter:description" content="O Brasil em pontos: cada ponto é um grupo de pessoas do Censo de 2022. Aproxime e veja o seu bairro.">
     <meta name="twitter:image" content="https://carabetta.xyz/dotsbr/og.jpg">
     <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
@@ -1118,13 +1118,14 @@
     <div class="intro-title-row">
         <h1 class="intro-title" id="intro-title">dotsbr por Raça</h1>
         <button type="button" class="share-btn" id="desk-share" aria-label="Compartilhar">
+            <!-- Three-node share (not the iOS box+arrow, which reads as export). -->
             <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path fill="currentColor" d="M12 3.2 16.2 7.4a1 1 0 0 1-1.4 1.4L13 6v8.5a1 1 0 1 1-2 0V6L9.2 8.8a1 1 0 1 1-1.4-1.4L12 3.2zM6 13a1 1 0 0 1 1 1v5h10v-5a1 1 0 1 1 2 0v5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-5a1 1 0 0 1 1-1z"/>
+                <path fill="currentColor" d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/>
             </svg>
         </button>
     </div>
     <!-- The hero line: the one number that keeps the map honest. Reports
-         filters too ("Mostrando: Parda · …"), same contract as the sheet. -->
+         filters too ("Só Parda · …"), same contract as the sheet. -->
     <p class="dot-scale" id="dot-scale">1 ponto = 4.500 pessoas</p>
     <!-- Óbitos stays in VIEW_CONFIGS / tiles; drop deaths from HIDDEN_VIEWS
          and restore this button (and the mobile one) to show it again. -->
@@ -1132,7 +1133,7 @@
         <button type="button" data-view="race" aria-pressed="true">Raça</button>
         <button type="button" data-view="income" aria-pressed="false">Renda</button>
     </div>
-    <p class="intro-explainer" id="intro-explainer">Cada ponto é um grupo de pessoas. A cor é a raça declarada no Censo Demográfico 2022 (IBGE). O número de pessoas por ponto muda com o zoom.</p>
+    <p class="intro-explainer" id="intro-explainer">Cada ponto é um grupo de pessoas. A cor mostra a raça que elas declararam no Censo de 2022. Quanto mais você aproxima o mapa, menos pessoas cada ponto representa.</p>
     <p class="coverage-note" id="coverage-note" hidden></p>
     <!-- Rows follow population size, descending (Censo 2022), same as VIEW_CONFIGS.
          On short viewports only this list scrolls, so the panel never overflows. -->
@@ -1143,35 +1144,35 @@
                 <span class="race-swatch" style="background-color: #e41a1c;"></span>
                 <span class="race-row-label">Parda</span>
             </button>
-            <button type="button" class="solo-button" title="Mostrar só esta categoria" aria-label="Mostrar só Parda">S</button>
+            <button type="button" class="solo-button" title="Ver só este grupo" aria-label="Ver só Parda">S</button>
         </li>
         <li class="race-row" data-race="branca">
             <button type="button" class="race-row-toggle" role="checkbox" aria-checked="true">
                 <span class="race-swatch" style="background-color: #4daf4a;"></span>
                 <span class="race-row-label">Branca</span>
             </button>
-            <button type="button" class="solo-button" title="Mostrar só esta categoria" aria-label="Mostrar só Branca">S</button>
+            <button type="button" class="solo-button" title="Ver só este grupo" aria-label="Ver só Branca">S</button>
         </li>
         <li class="race-row" data-race="preta">
             <button type="button" class="race-row-toggle" role="checkbox" aria-checked="true">
                 <span class="race-swatch" style="background-color: #ff7f00;"></span>
                 <span class="race-row-label">Preta</span>
             </button>
-            <button type="button" class="solo-button" title="Mostrar só esta categoria" aria-label="Mostrar só Preta">S</button>
+            <button type="button" class="solo-button" title="Ver só este grupo" aria-label="Ver só Preta">S</button>
         </li>
         <li class="race-row" data-race="indigena">
             <button type="button" class="race-row-toggle" role="checkbox" aria-checked="true">
                 <span class="race-swatch" style="background-color: #984ea3;"></span>
                 <span class="race-row-label">Indígena</span>
             </button>
-            <button type="button" class="solo-button" title="Mostrar só esta categoria" aria-label="Mostrar só Indígena">S</button>
+            <button type="button" class="solo-button" title="Ver só este grupo" aria-label="Ver só Indígena">S</button>
         </li>
         <li class="race-row" data-race="amarela">
             <button type="button" class="race-row-toggle" role="checkbox" aria-checked="true">
                 <span class="race-swatch" style="background-color: #377eb8;"></span>
                 <span class="race-row-label">Amarela</span>
             </button>
-            <button type="button" class="solo-button" title="Mostrar só esta categoria" aria-label="Mostrar só Amarela">S</button>
+            <button type="button" class="solo-button" title="Ver só este grupo" aria-label="Ver só Amarela">S</button>
         </li>
     </ul>
     <!-- Click-to-dock stats (mirrors the mobile tap dock): hover keeps the
@@ -1181,7 +1182,7 @@
         <button type="button" class="panel-stats-close" id="panel-stats-close" aria-label="Fechar detalhes">✕</button>
         <div class="panel-stats-body" id="panel-stats-body"></div>
     </div>
-    <p class="panel-hint" id="panel-hint">Clique no mapa para fixar os detalhes aqui</p>
+    <p class="panel-hint" id="panel-hint">Clique em uma área do mapa para ver os números aqui</p>
 </aside>
 <!-- Desktop search: floating pill immediately to the RIGHT of the panel, top
      aligned with it. Anchored to .chrome-stack (left: 100%) so it tracks the
@@ -1205,7 +1206,7 @@
         <div class="g-row-pct" id="preta"></div>
     </div>
     <div class="g-row">
-        <div class="g-row-label">Indigena</div>
+        <div class="g-row-label">Indígena</div>
         <div class="g-row-pct" id="indigena"></div>
     </div>
     <div class="g-row">
@@ -1241,7 +1242,7 @@
     <div class="m-search-bar" id="m-search-bar" role="search" aria-label="Busca de lugares"></div>
 
     <!-- Always-visible legend while exploring: tap toggles, long-press solos. -->
-    <div class="chip-rail" id="chip-rail" role="group" aria-label="Legenda e filtro de categorias"></div>
+    <div class="chip-rail" id="chip-rail" role="group" aria-label="Legenda e filtro de grupos"></div>
 
     <!-- Tap-for-details lands here (fixed, thumb-reachable), not in a popup
          under the finger. ✕ or an empty-map tap dismisses. -->
@@ -1254,7 +1255,7 @@
         <!-- Grab zone: drag anywhere here to snap peek/half/full; tap toggles. -->
         <div class="sheet-header" id="sheet-header">
             <div class="sheet-handle" aria-hidden="true"></div>
-            <!-- Product name first, then the active lens ("por Raça/Renda/Óbitos",
+            <!-- Product name first, then the active lens ("por Raça/Renda/Mortes",
                  same label as the switcher): the title is visible in every snap
                  state, so it must say what the map is showing. -->
             <div class="sheet-header-row">
@@ -1263,8 +1264,9 @@
                     <p class="sheet-scale" id="sheet-scale">1 ponto = 4.500 pessoas</p>
                 </div>
                 <button type="button" class="share-btn" id="m-share" aria-label="Compartilhar">
+                    <!-- Three-node share (not the iOS box+arrow, which reads as export). -->
                     <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path fill="currentColor" d="M12 3.2 16.2 7.4a1 1 0 0 1-1.4 1.4L13 6v8.5a1 1 0 1 1-2 0V6L9.2 8.8a1 1 0 1 1-1.4-1.4L12 3.2zM6 13a1 1 0 0 1 1 1v5h10v-5a1 1 0 1 1 2 0v5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-5a1 1 0 0 1 1-1z"/>
+                        <path fill="currentColor" d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/>
                     </svg>
                 </button>
             </div>
@@ -1274,7 +1276,7 @@
                 <button type="button" data-view="race" aria-pressed="true">Raça</button>
                 <button type="button" data-view="income" aria-pressed="false">Renda</button>
             </div>
-            <p class="sheet-explainer" id="sheet-explainer">Cada ponto é um grupo de pessoas. A cor é a raça declarada no Censo Demográfico 2022 (IBGE). O número de pessoas por ponto muda com o zoom.</p>
+            <p class="sheet-explainer" id="sheet-explainer">Cada ponto é um grupo de pessoas. A cor mostra a raça que elas declararam no Censo de 2022. Quanto mais você aproxima o mapa, menos pessoas cada ponto representa.</p>
             <ul class="legend-races sheet-legend" id="m-legend"></ul>
             <!-- Mobile footer is gone; the credits live here (full state). -->
             <p class="sheet-credits">
@@ -1338,7 +1340,7 @@
     // Public name on the tab and in "por <lens>" titles. Repo and storage keys stay `dotmap`.
     const PRODUCT_NAME = 'dotsbr';
     // Same hook as og:description — the share card must not lock to one view.
-    const SHARE_HOOK = 'O Brasil em pontos. Aproxime o mapa — e escolha o que a cor conta.';
+    const SHARE_HOOK = 'O Brasil em pontos: cada ponto é um grupo de pessoas do Censo de 2022. Aproxime e veja o seu bairro.';
     const SHARE_PAGE_URL = 'https://carabetta.xyz/dotsbr/';
     const VIEW_CONFIGS = {
         race: {
@@ -1346,7 +1348,7 @@
             property: 'race',
             label: 'Raça',
             unit: 'pessoas',
-            explainer: 'Cada ponto é um grupo de pessoas. A cor é a raça declarada no Censo Demográfico 2022 (IBGE). O número de pessoas por ponto muda com o zoom.',
+            explainer: 'Cada ponto é um grupo de pessoas. A cor mostra a raça que elas declararam no Censo de 2022. Quanto mais você aproxima o mapa, menos pessoas cada ponto representa.',
             // Display order: population size, descending (Censo 2022 — parda and
             // branca are the two biggest groups). Colors stay glued to the keys.
             categories: [
@@ -1363,32 +1365,35 @@
             property: 'cat',
             label: 'Renda',
             unit: 'domicílios',
-            explainer: 'Cada ponto representa um grupo de domicílios. A cor mostra a faixa da renda mediana mensal das pessoas responsáveis com rendimento no setor censitário (Censo Demográfico 2022, IBGE). O número de domicílios por ponto muda com o zoom.',
+            explainer: 'Cada ponto é um grupo de domicílios. A cor mostra a renda típica de quem é responsável pelo domicílio em cada vizinhança, medida em salários mínimos (Censo de 2022). Quanto mais você aproxima o mapa, menos domicílios cada ponto representa.',
             // ColorBrewer RdBu inverted so low income reads as red and high as
             // blue (pobre = vermelho, rico = azul). Keys stay in SM order.
+            // 4th slot is the chip-rail short label: full "salário mínimo"
+            // names do not fit the phone pills; the explainer already names
+            // the unit so "Até 1" / "10+" stay honest.
             categories: [
-                ['income_ate_1sm', 'Até 1 SM', '#b2182b'],
-                ['income_1_2sm', '1–2 SM', '#d6604d'],
-                ['income_2_3sm', '2–3 SM', '#f4a582'],
-                ['income_3_5sm', '3–5 SM', '#92c5de'],
-                ['income_5_10sm', '5–10 SM', '#4393c3'],
-                ['income_mais_10sm', 'Mais de 10 SM', '#2166ac'],
-                ['income_sem_dado', 'Sem dado', '#777777']
+                ['income_ate_1sm', 'Até 1 salário mínimo', '#b2182b', 'Até 1'],
+                ['income_1_2sm', '1 a 2 salários mínimos', '#d6604d', '1 a 2'],
+                ['income_2_3sm', '2 a 3 salários mínimos', '#f4a582', '2 a 3'],
+                ['income_3_5sm', '3 a 5 salários mínimos', '#92c5de', '3 a 5'],
+                ['income_5_10sm', '5 a 10 salários mínimos', '#4393c3', '5 a 10'],
+                ['income_mais_10sm', 'Mais de 10 salários mínimos', '#2166ac', '10+'],
+                ['income_sem_dado', 'Sem informação', '#777777', 'Sem info']
             ],
             perDot: [1500, 700, 300, 130, 50, 40, 30, 24, 17, 12, 8, 7]
         },
         deaths: {
             layer: 'points-deaths',
             property: 'cat',
-            label: 'Óbitos',
-            unit: 'óbitos',
-            explainer: 'Cada ponto representa um grupo de pessoas falecidas que moravam no setor. A cor mostra a idade ao falecer. Os dados cobrem janeiro de 2019 a julho de 2022 (Censo Demográfico 2022, IBGE). O número de óbitos por ponto muda com o zoom.',
+            label: 'Mortes',
+            unit: 'mortes',
+            explainer: 'Cada ponto é um grupo de pessoas que morreram entre janeiro de 2019 e julho de 2022. A cor mostra a idade com que morreram (Censo de 2022). Quanto mais você aproxima o mapa, menos pessoas cada ponto representa.',
             categories: [
                 ['death_0_14', '0–14 anos', '#1b9e77'],
                 ['death_15_29', '15–29 anos', '#7570b3'],
                 ['death_30_59', '30–59 anos', '#d95f02'],
                 ['death_60_plus', '60 anos ou mais', '#e7298a'],
-                ['death_age_suppressed', 'Idade suprimida', '#777777']
+                ['death_age_suppressed', 'Idade não divulgada', '#777777']
             ],
             perDot: [200, 100, 50, 25, 12, 10, 8, 6, 4, 3, 2, 1]
         }
@@ -1580,9 +1585,9 @@
         let prefix = '';
         if (active.size === 1) {
             const only = config.categories.find(function (c) { return active.has(c[0]); });
-            if (only) prefix = 'Mostrando: ' + only[1] + ' · ';
+            if (only) prefix = 'Só ' + only[1] + ' · ';
         } else if (active.size < config.categories.length) {
-            prefix = 'Filtro: ' + active.size + ' de ' + config.categories.length + ' categorias · ';
+            prefix = 'Mostrando ' + active.size + ' de ' + config.categories.length + ' grupos · ';
         }
         return prefix + base;
     }
@@ -1663,8 +1668,9 @@
                 name: name,
                 rows: [
                     ['Domicílios', households.toLocaleString('pt-BR')],
-                    ['Renda mediana', currency(properties.renda_mediana)],
-                    ['Renda média', currency(properties.renda_media)]
+                    // Median is the honest typical household figure; mean
+                    // next to it made people pick the higher number.
+                    ['Renda do domicílio', currency(properties.renda_mediana)]
                 ]
             };
         }
@@ -1679,7 +1685,7 @@
                 const pct = total ? Math.round(count / total * 100) : 0;
                 return [item[1], count.toLocaleString('pt-BR') + ' · ' + pct + '%'];
             });
-            rows.push(['Óbitos', total.toLocaleString('pt-BR')]);
+            rows.push(['Mortes', total.toLocaleString('pt-BR')]);
             return { name: name, rows: rows };
         }
         // Same display order as the legend: population size, descending.
@@ -2084,7 +2090,7 @@
             feature: feature,
             source: isCensusTract ? 'setores' : 'municipios',
             data: tooltipData(
-                isCensusTract ? 'Setor Censitário' : feature.properties.municipio,
+                isCensusTract ? 'Vizinhança (recorte do Censo)' : feature.properties.municipio,
                 feature.properties
             )
         };
@@ -2202,10 +2208,10 @@
         row.innerHTML =
             '<button type="button" class="race-row-toggle" role="checkbox" aria-checked="true">' +
             '<span class="race-swatch"></span><span class="race-row-label"></span></button>' +
-            '<button type="button" class="solo-button" title="Mostrar só esta categoria">S</button>';
+            '<button type="button" class="solo-button" title="Ver só este grupo">S</button>';
         row.querySelector('.race-swatch').style.backgroundColor = item[2];
         row.querySelector('.race-row-label').textContent = item[1];
-        row.querySelector('.solo-button').setAttribute('aria-label', 'Mostrar só ' + item[1]);
+        row.querySelector('.solo-button').setAttribute('aria-label', 'Ver só ' + item[1]);
         row.querySelector('.race-row-toggle').addEventListener('click', function () {
             toggleCategory(item[0]);
         });
@@ -2233,7 +2239,7 @@
     }
 
     // The chip rail is the always-visible legend of the phone peek state.
-    // Rebuilt per view because Raça/Renda/Óbitos have 5/7/5 categories.
+    // Rebuilt per view because Raça/Renda/Mortes have 5/7/5 groups.
     function renderChipRail() {
         const rail = document.getElementById('chip-rail');
         if (!rail) return;
@@ -2244,10 +2250,11 @@
             chip.className = 'legend-chip';
             chip.dataset.category = item[0];
             chip.setAttribute('aria-pressed', 'true');
-            chip.title = item[1] + ' — toque filtra, toque longo mostra só esta';
+            chip.title = item[1] + ' — toque para mostrar ou esconder; segure para ver só este grupo';
             chip.innerHTML = '<span class="race-swatch"></span><span class="legend-chip-label"></span>';
             chip.querySelector('.race-swatch').style.backgroundColor = item[2];
-            chip.querySelector('.legend-chip-label').textContent = item[1];
+            // Optional 4th slot: short chip label when the legend name is too long.
+            chip.querySelector('.legend-chip-label').textContent = item[3] || item[1];
             wireChip(chip, item[0]);
             rail.appendChild(chip);
         });
@@ -2307,7 +2314,7 @@
             chip.classList.toggle('is-off', !on);
             chip.setAttribute('aria-pressed', on ? 'true' : 'false');
         });
-        // The sheet headline carries the "Mostrando/Filtro" prefix.
+        // The sheet headline carries the "Só / Mostrando N de M grupos" prefix.
         updateDotScale();
     }
 
@@ -2380,8 +2387,8 @@
 
     // ------- SHARE CARD --------
     // Compose a 4:5 JPEG from the live WebGL canvas + a caption (not a DOM
-    // screenshot: the sheet/search/chips would cover the map). Sync toDataURL
-    // keeps iOS navigator.share() inside the same user-gesture turn.
+    // screenshot). Width tracks the canvas (cap 2160) so we never upscale.
+    // Sync toDataURL keeps iOS navigator.share() inside the same gesture.
 
     function wrapShareText(ctx, text, maxWidth) {
         const words = text.split(/\s+/);
@@ -2400,13 +2407,14 @@
         return lines;
     }
 
-    function layoutShareLegend(ctx, items, maxWidth) {
-        const gapX = 28;
-        const swatch = 18;
+    function layoutShareLegend(ctx, items, maxWidth, scale) {
+        const gapX = 28 * scale;
+        const swatch = 18 * scale;
+        const labelGap = 10 * scale;
         const rows = [[]];
         let rowW = 0;
         items.forEach(function (item) {
-            const w = swatch + 10 + ctx.measureText(item[1]).width;
+            const w = swatch + labelGap + ctx.measureText(item[1]).width;
             const cur = rows[rows.length - 1];
             const need = (cur.length ? gapX : 0) + w;
             if (cur.length && rowW + need > maxWidth) {
@@ -2417,7 +2425,66 @@
                 rowW += need;
             }
         });
-        return { rows: rows, gapX: gapX, swatch: swatch };
+        return { rows: rows, gapX: gapX, swatch: swatch, labelGap: labelGap };
+    }
+
+    function enableHighQualitySmoothing(ctx) {
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+    }
+
+    // Halve until close to the target so tiny map dots survive the resize
+    // better than a single drawImage stretch (the old 1080 card looked soft).
+    function scaleCanvasHQ(src, destW, destH) {
+        let canvas = src;
+        let w = src.width;
+        let h = src.height;
+        while (w / 2 >= destW && h / 2 >= destH) {
+            const next = document.createElement('canvas');
+            next.width = Math.round(w / 2);
+            next.height = Math.round(h / 2);
+            const c = next.getContext('2d');
+            enableHighQualitySmoothing(c);
+            c.drawImage(canvas, 0, 0, next.width, next.height);
+            canvas = next;
+            w = next.width;
+            h = next.height;
+        }
+        if (w === destW && h === destH) return canvas;
+        const out = document.createElement('canvas');
+        out.width = destW;
+        out.height = destH;
+        const c = out.getContext('2d');
+        enableHighQualitySmoothing(c);
+        c.drawImage(canvas, 0, 0, destW, destH);
+        return out;
+    }
+
+    function placeLabelForShare() {
+        // Country frame: the geographic center is a random cerrado município.
+        if (map.getZoom() < 6) return 'Brasil';
+        const pt = map.project(map.getCenter());
+        const layers = [];
+        if (map.getLayer('municipios-fill')) layers.push('municipios-fill');
+        if (map.getLayer('setores-fill')) layers.push('setores-fill');
+        if (!layers.length) return null;
+        const features = map.queryRenderedFeatures(pt, { layers: layers });
+        if (!features.length) return null;
+        const props = features[0].properties || {};
+        // Setor tiles keep municipio for this label; never print "Setor Censitário".
+        const name = props.municipio;
+        if (!name) return null;
+        return props.sigla_uf ? name + ' · ' + props.sigla_uf : name;
+    }
+
+    function drawRoundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
     }
 
     function composeShareCardFile() {
@@ -2426,74 +2493,113 @@
         const items = config.categories.filter(function (item) {
             return active.has(item[0]);
         });
-        const W = 1080;
-        const H = 1350;
-        const pad = 48;
+        const src = map.getCanvas();
+        // Match the live canvas so phone-width maps are not blown up to 2160
+        // (that upscale is what made the dots look muddy). Cap at 2160.
+        const W = Math.max(1, Math.min(2160, src.width));
+        const S = W / 1080;
+        const H = Math.round(1350 * S);
+        const pad = 48 * S;
         const canvas = document.createElement('canvas');
         canvas.width = W;
         canvas.height = H;
         const ctx = canvas.getContext('2d');
-        const titleFont = '700 42px ' + getComputedStyle(document.documentElement)
+        enableHighQualitySmoothing(ctx);
+        const titleStack = getComputedStyle(document.documentElement)
             .getPropertyValue('--chrome-title-font').trim();
-        const bodyFont = '500 24px ' + getComputedStyle(document.documentElement)
+        const bodyStack = getComputedStyle(document.documentElement)
             .getPropertyValue('--chrome-font').trim();
-        const hookFont = '400 26px ' + getComputedStyle(document.documentElement)
-            .getPropertyValue('--chrome-font').trim();
-        const urlFont = '500 22px ' + getComputedStyle(document.documentElement)
-            .getPropertyValue('--chrome-font').trim();
-        const legendFont = '500 22px ' + getComputedStyle(document.documentElement)
-            .getPropertyValue('--chrome-font').trim();
+        const titleFont = '700 ' + (42 * S) + 'px ' + titleStack;
+        const bodyFont = '500 ' + (24 * S) + 'px ' + bodyStack;
+        const hookFont = '400 ' + (26 * S) + 'px ' + bodyStack;
+        const urlFont = '500 ' + (22 * S) + 'px ' + bodyStack;
+        const legendFont = '500 ' + (22 * S) + 'px ' + bodyStack;
 
         ctx.font = bodyFont;
         const scaleLines = wrapShareText(ctx, formatDotScale(), W - pad * 2);
         ctx.font = hookFont;
         const hookLines = wrapShareText(ctx, SHARE_HOOK, W - pad * 2);
         ctx.font = legendFont;
-        const legend = layoutShareLegend(ctx, items, W - pad * 2);
+        const legend = layoutShareLegend(ctx, items, W - pad * 2, S);
 
-        const titleH = 50;
-        const scaleH = scaleLines.length * 32;
-        const legendH = Math.max(1, legend.rows.length) * 36;
-        const hookH = hookLines.length * 34;
-        const urlH = 28;
-        const captionH = pad + titleH + 8 + scaleH + 20 + legendH + 24 + hookH + 16 + urlH + pad;
-        const mapH = Math.max(720, H - captionH);
+        const titleH = 50 * S;
+        const scaleLH = 32 * S;
+        const legendLH = 36 * S;
+        const hookLH = 34 * S;
+        const urlH = 28 * S;
+        const captionH = pad + titleH + 8 * S + scaleLines.length * scaleLH + 20 * S
+            + Math.max(1, legend.rows.length) * legendLH + 24 * S
+            + hookLines.length * hookLH + 16 * S + urlH + pad;
+        const mapH = Math.max(Math.round(720 * S), H - captionH);
 
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, W, H);
 
-        const src = map.getCanvas();
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(0, 0, W, mapH);
-        ctx.clip();
-        const scale = Math.max(W / src.width, mapH / src.height);
-        const tw = src.width * scale;
-        const th = src.height * scale;
-        ctx.drawImage(src, (W - tw) / 2, (mapH - th) / 2, tw, th);
-        ctx.restore();
+        const destRatio = W / mapH;
+        const srcRatio = src.width / src.height;
+        let sx = 0;
+        let sy = 0;
+        let sw = src.width;
+        let sh = src.height;
+        if (srcRatio > destRatio) {
+            sw = src.height * destRatio;
+            sx = (src.width - sw) / 2;
+        } else {
+            sh = src.width / destRatio;
+            sy = (src.height - sh) / 2;
+        }
+        const crop = document.createElement('canvas');
+        crop.width = Math.max(1, Math.round(sw));
+        crop.height = Math.max(1, Math.round(sh));
+        const cropCtx = crop.getContext('2d');
+        enableHighQualitySmoothing(cropCtx);
+        cropCtx.drawImage(src, sx, sy, sw, sh, 0, 0, crop.width, crop.height);
+        ctx.drawImage(scaleCanvasHQ(crop, W, mapH), 0, 0);
 
-        const fadeH = 48;
+        const fadeH = 48 * S;
         const fade = ctx.createLinearGradient(0, mapH - fadeH, 0, mapH);
         fade.addColorStop(0, 'rgba(255,255,255,0)');
         fade.addColorStop(1, 'rgba(255,255,255,1)');
         ctx.fillStyle = fade;
         ctx.fillRect(0, mapH - fadeH, W, fadeH);
 
+        const place = placeLabelForShare();
+        if (place) {
+            const pillFont = '600 ' + (22 * S) + 'px ' + bodyStack;
+            ctx.font = pillFont;
+            const pillPadX = 16 * S;
+            const pillH = 36 * S;
+            const pillW = ctx.measureText(place).width + pillPadX * 2;
+            const pillX = pad;
+            const pillY = mapH - pad - pillH;
+            ctx.save();
+            ctx.shadowColor = 'rgba(0,0,0,0.18)';
+            ctx.shadowBlur = 8 * S;
+            ctx.shadowOffsetY = 2 * S;
+            drawRoundRect(ctx, pillX, pillY, pillW, pillH, 10 * S);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.restore();
+            ctx.fillStyle = '#202124';
+            ctx.font = pillFont;
+            ctx.textBaseline = 'middle';
+            ctx.fillText(place, pillX + pillPadX, pillY + pillH / 2);
+        }
+
         let y = mapH + pad;
         ctx.fillStyle = '#1a1a1a';
         ctx.font = titleFont;
         ctx.textBaseline = 'top';
         ctx.fillText(PRODUCT_NAME + ' por ' + config.label, pad, y);
-        y += titleH + 8;
+        y += titleH + 8 * S;
 
         ctx.fillStyle = '#202124';
         ctx.font = bodyFont;
         scaleLines.forEach(function (line) {
             ctx.fillText(line, pad, y);
-            y += 32;
+            y += scaleLH;
         });
-        y += 20;
+        y += 20 * S;
 
         ctx.font = legendFont;
         ctx.textBaseline = 'middle';
@@ -2505,26 +2611,27 @@
                 ctx.arc(x + legend.swatch / 2, y, legend.swatch / 2, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.fillStyle = '#202124';
-                ctx.fillText(item[1], x + legend.swatch + 10, y);
-                x += legend.swatch + 10 + ctx.measureText(item[1]).width + legend.gapX;
+                ctx.fillText(item[1], x + legend.swatch + legend.labelGap, y);
+                x += legend.swatch + legend.labelGap + ctx.measureText(item[1]).width + legend.gapX;
             });
-            y += 36;
+            y += legendLH;
         });
-        y += 24;
+        y += 24 * S;
 
         ctx.fillStyle = '#5f6368';
         ctx.font = hookFont;
         ctx.textBaseline = 'top';
         hookLines.forEach(function (line) {
             ctx.fillText(line, pad, y);
-            y += 34;
+            y += hookLH;
         });
-        y += 16;
+        y += 16 * S;
         ctx.font = urlFont;
         ctx.fillText('carabetta.xyz/dotsbr', pad, y);
 
         // Sync so iOS still treats this as the tap's user gesture.
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        // 0.92 keeps the dots from JPEG ringing without a huge file.
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
         const bin = atob(dataUrl.split(',')[1]);
         const bytes = new Uint8Array(bin.length);
         for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
@@ -2556,13 +2663,10 @@
         return Promise.resolve();
     }
 
-    function canShareFiles(file) {
-        if (!navigator.share || !navigator.canShare) return false;
-        try {
-            return navigator.canShare({ files: [file] });
-        } catch (e) {
-            return false;
-        }
+    function openNativeShare(data) {
+        // Always prefer the OS sheet (WhatsApp / Mensagens / AirDrop…).
+        // Do not gate on canShare({ files }): several mobile browsers lie.
+        return navigator.share(data);
     }
 
     function shareCurrentView() {
@@ -2581,25 +2685,30 @@
         }
 
         const payload = shareTextPayload();
-        if (file && canShareFiles(file)) {
-            navigator.share(Object.assign({ files: [file] }, payload)).then(finish, function (err) {
+        if (typeof navigator.share === 'function') {
+            // Phone path: open the system picker. Try the JPEG first; if the
+            // browser rejects files, still show the sheet with text + URL.
+            const first = file
+                ? openNativeShare(Object.assign({ files: [file] }, payload))
+                : openNativeShare(payload);
+            first.then(finish, function (err) {
                 if (err && err.name === 'AbortError') {
                     finish();
                     return;
                 }
-                downloadShareFile(file);
+                if (file) {
+                    openNativeShare(payload).then(finish, function (err2) {
+                        if (err2 && err2.name !== 'AbortError') copyShareUrl();
+                        finish();
+                    });
+                    return;
+                }
                 copyShareUrl();
                 finish();
             });
             return;
         }
-        if (navigator.share) {
-            navigator.share(payload).then(finish, function (err) {
-                if (err && err.name !== 'AbortError') copyShareUrl();
-                finish();
-            });
-            return;
-        }
+        // Desktop browsers (Chrome/macOS) have no share sheet — save the card.
         if (file) downloadShareFile(file);
         copyShareUrl();
         finish();

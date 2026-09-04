@@ -6,7 +6,7 @@ This document describes the relationship between zoom levels and dot density in 
 
 The UI switches between **Raça** and **Renda**, both with 27-UF coverage. Renda dots represent occupied permanent private households and are colored by the setor median income of responsible persons with income.
 
-**Óbitos is built but hidden from the UI for now**: the tiles (`tiles/deaths/`, `censo2022_deaths.pmtiles`), the makefiles theme, and the `deaths` entry in `VIEW_CONFIGS` all stay, but the switcher buttons were removed and `HIDDEN_VIEWS` in `index.html` makes `setView('deaths')` a no-op (persisted `dotmap-view: deaths` falls back to race on load). Óbitos dots represent deaths reported for January 2019–July 2022, colored by age at death; sex is summed, not shown. To un-hide: restore the button in both switchers and drop `deaths` from `HIDDEN_VIEWS`.
+**Óbitos is built but hidden from the UI for now**: the tiles (`tiles/deaths/`, `censo2022_deaths.pmtiles`), the makefiles theme, and the `deaths` entry in `VIEW_CONFIGS` all stay, but the switcher buttons were removed and `HIDDEN_VIEWS` in `index.html` makes `setView('deaths')` a no-op (persisted `dotmap-view: deaths` falls back to race on load). The UI label is **Mortes** (not “Óbitos”). Dots represent deaths reported for January 2019–July 2022, colored by age at death; sex is summed, not shown. To un-hide: restore the button in both switchers and drop `deaths` from `HIDDEN_VIEWS`.
 
 ## Configuration Table
 
@@ -163,13 +163,13 @@ Income (ColorBrewer RdBu inverted — low = red, high = blue):
 
 | Key | Hex | Why |
 |---|---|---|
-| `income_ate_1sm` | `#b2182b` | darkest red — até 1 SM |
-| `income_1_2sm` | `#d6604d` | |
-| `income_2_3sm` | `#f4a582` | |
-| `income_3_5sm` | `#92c5de` | |
-| `income_5_10sm` | `#4393c3` | |
-| `income_mais_10sm` | `#2166ac` | darkest blue — mais de 10 SM |
-| `income_sem_dado` | `#777777` | unavailable median |
+| `income_ate_1sm` | `#b2182b` | darkest red — até 1 salário mínimo |
+| `income_1_2sm` | `#d6604d` | 1 a 2 salários mínimos |
+| `income_2_3sm` | `#f4a582` | 2 a 3 salários mínimos |
+| `income_3_5sm` | `#92c5de` | 3 a 5 salários mínimos |
+| `income_5_10sm` | `#4393c3` | 5 a 10 salários mínimos |
+| `income_mais_10sm` | `#2166ac` | darkest blue — mais de 10 salários mínimos |
+| `income_sem_dado` | `#777777` | sem informação |
 
 This mapping is the product default (`circle-color` match + legend swatches) and HUD **Atual**. Production users get it with no HUD. Do not restore the old red/gold/mint set (`#fb3640` / `#d4b000` / `#89ffa7` / `#3899c9` / `#e8800c`) or the previous income ramp that painted poor blue and rich red. The single panel, the search field, and the slim footer keep light chrome (white surfaces, dark text) on top of the light map.
 
@@ -182,19 +182,21 @@ The map is full-bleed (`#map` is `100vw` / `100vh`). There is **no** fixed heade
 White rounded card, top-left, story-first — the mobile sheet's reading order applied to desktop:
 
 1. **h1 with the active lens**: `dotsbr por Raça/Renda` (`#intro-title`, rewritten live by `setView`, same "por <label>" pattern as the mobile sheet title; Óbitos would follow the same pattern when un-hidden). A **Compartilhar** button sits on the same row (`#desk-share`) — see [Share button](#share-button).
-2. **Hero scale line** (`#dot-scale`, ~15px semibold): `1 ponto = N unidades`, updated on zoom and prefixed with filter state exactly like the sheet headline (`Mostrando: Parda · …` when soloed, `Filtro: k de n categorias · …` for partial sets). It was an 11px footnote in the old legend card; it is the number that keeps the map honest, so it leads.
+2. **Hero scale line** (`#dot-scale`, ~15px semibold): `1 ponto = N unidades`, updated on zoom and prefixed with filter state exactly like the sheet headline (`Só Parda · …` when soloed, `Mostrando k de n grupos · …` for partial sets). It was an 11px footnote in the old legend card; it is the number that keeps the map honest, so it leads.
 3. **Raça / Renda** switcher (view stored as `dotmap-view`; switching does not move the camera; Óbitos hidden — see the views note at the top).
 4. Explainer.
 5. **Legend rows** (toggle + solo, race order parda → branca → preta → indígena → amarela). On short viewports (e.g. 1366×768) **only this list scrolls** (`overflow-y: auto` + flex `min-height: 0`), so the panel never overflows the viewport.
-6. **Docked stats slot** (`#panel-stats`) + a quiet hint (`Clique no mapa para fixar os detalhes aqui`) — see hover/click below.
+6. **Docked stats slot** (`#panel-stats`) + a quiet hint (`Clique em uma área do mapa para ver os números aqui`) — see hover/click below.
 
 Search is **not** inside the panel: the geocoder floats as a white pill **immediately to the right of the panel, top-aligned** (`#desk-search`, anchored to the stack with `left: calc(100% + 12px)` so it tracks the card width). Suggestions drop over the map, never clipped by the card.
 
 The page `<title>` stays the plain **dotsbr** (tab labels should not churn on view switch); only the h1 carries the lens suffix. Share previews (WhatsApp, iMessage, Telegram, Slack) use the same name plus a static description and `og.jpg` — see [Link previews](#link-previews-whatsapp--imessage) below. The explainer (`p.intro-explainer`) is:
 
-**Cada ponto é um grupo de pessoas. A cor é a raça declarada no Censo Demográfico 2022 (IBGE). O número de pessoas por ponto muda com o zoom.**
+**Cada ponto é um grupo de pessoas. A cor mostra a raça que elas declararam no Censo de 2022. Quanto mais você aproxima o mapa, menos pessoas cada ponto representa.**
 
-Do not say “um ponto por pessoa”: one dot is N units and N changes with zoom. Do not restore the old h1 “Distribuição Racial no Brasil” (too close to Pata’s 2015 *Mapa Racial do Brasil*) or the previous product name “Onde o Brasil mora”. The income and mortality views rewrite the explanation and swap the h1's `por <label>` suffix; the product name before “por” never changes.
+Renda: **Cada ponto é um grupo de domicílios. A cor mostra a renda típica de quem é responsável pelo domicílio em cada vizinhança, medida em salários mínimos (Censo de 2022). Quanto mais você aproxima o mapa, menos domicílios cada ponto representa.** Mortes (hidden): **Cada ponto é um grupo de pessoas que morreram entre janeiro de 2019 e julho de 2022. A cor mostra a idade com que morreram (Censo de 2022). Quanto mais você aproxima o mapa, menos pessoas cada ponto representa.**
+
+Body copy never says “(IBGE)” or “Censo Demográfico 2022” — those stay in the footer/sheet credits. Do not say “um ponto por pessoa”: one dot is N units and N changes with zoom. Do not restore the old h1 “Distribuição Racial no Brasil” (too close to Pata’s 2015 *Mapa Racial do Brasil*) or the previous product name “Onde o Brasil mora”. The income and mortality views rewrite the explanation and swap the h1's `por <label>` suffix (Mortes when that view is un-hidden); the product name before “por” never changes.
 
 ## Link previews (WhatsApp / iMessage)
 
@@ -203,7 +205,8 @@ Crawlers do not run the map JS, so the share card is **static tags in `<head>`**
 | Tag | Value |
 |---|---|
 | `og:title` / `<title>` | **dotsbr** |
-| `og:description` / `description` | **O Brasil em pontos. Aproxime o mapa — e escolha o que a cor conta.** (share hook, not the in-map explainer: race and income both color the dots, so the card must not lock to one view) |
+| `og:description` / `description` | **O Brasil em pontos: cada ponto é um grupo de pessoas do Censo de 2022. Aproxime e veja o seu bairro.** (share hook, not the in-map explainer: race and income both color the dots, so the card must not lock to one view) |
+| `og:image:alt` | **Mapa do Brasil em pontos coloridos, feito com dados do Censo de 2022** |
 | `og:image` | `https://carabetta.xyz/dotsbr/og.jpg` (absolute; 1200×630 JPEG of the national race map, chrome hidden) |
 | `twitter:card` | `summary_large_image` (Slack / X also read this) |
 
@@ -216,16 +219,18 @@ Not a FAB (mobile chrome forbids on-map zoom/FAB). Same control, two mounts:
 - **Desktop:** `#desk-share` on the title row of `.intro-card`.
 - **Mobile:** `#m-share` in `#sheet-header`, right of the title, visible in **peek**. `pointerdown`/`click` stop at the button so the header drag and peek/half toggle do not fire.
 
-Tap composes a **4:5** JPEG (1080×1350) in Canvas 2D — not a DOM screenshot:
+The glyph is the three-node share mark (not the iOS box+arrow, which reads as export).
+
+Tap composes a **4:5** JPEG (up to 2160px wide, quality 0.92) in Canvas 2D — not a DOM screenshot. Width follows the live map canvas so a phone is not upscaled (that blur is worse than a smaller file); a wide Retina canvas is stepwise-downsampled, never stretched.
 
 | Band | Content |
 |---|---|
-| Map | `map.getCanvas()` of the current camera (filters and view included). Needs `preserveDrawingBuffer: true` or the frame is already cleared. |
-| Caption | `dotsbr por <view>`, the same `formatDotScale()` string as the hero line (including `Mostrando` / `Filtro`), swatches for **active** categories only, the share hook, `carabetta.xyz/dotsbr` |
+| Map | `map.getCanvas()` of the current camera (filters and view included). Needs `preserveDrawingBuffer: true` or the frame is already cleared. A white pill at the lower-left names the place: **Brasil** below zoom 6 (country frame — the geographic center would otherwise be a random cerrado município); at 6+ `municipio · UF` from `queryRenderedFeatures` at the camera center (`municipios-fill` z3–9, `setores-fill` z≥10). No hit / no `municipio` field: no pill. Never “Setor Censitário”. |
+| Caption | `dotsbr por <view>`, the same `formatDotScale()` string as the hero line (including `Só` / `Mostrando N de M grupos`), swatches for **active** categories only, the share hook, `carabetta.xyz/dotsbr` |
 
-Município/setor numbers stay off the card. `html2canvas` is not used (WebGL + live chrome would fail or look messy).
+Município/setor **numbers** stay off the card (the pill is a name only). The live map still has no city labels. `html2canvas` is not used (WebGL + live chrome would fail or look messy).
 
-`navigator.share({ files, title, text })` when `canShare({ files })` — URL is **inside `text`** because iOS WhatsApp drops `url` when a file is present. Desktop / no-files: download `dotsbr.jpg` and copy the URL. If `toDataURL` throws (Mapbox raster tainted the canvas), share text+URL only so the button never dies.
+On a phone, tap always opens the **OS share sheet** (`navigator.share`) so the person picks WhatsApp / Mensagens / AirDrop. The JPEG goes in `files` when the browser accepts it; if that call fails, the same sheet still opens with title + text. URL stays **inside `text`** because iOS WhatsApp drops `url` when a file is present. Do not wait for `canShare({ files })` — several mobile browsers return false and would skip the sheet. Download `dotsbr.jpg` only when `navigator.share` is missing (typical desktop Chrome/macOS). If `toDataURL` throws (Mapbox raster tainted the canvas), the sheet still opens with text+URL.
 
 Search sits in the floating pill **to the right of the panel** on desktop (on phones the same geocoder pins to the top of the screen — see the mobile chrome section), powered by [`mapbox-gl-geocoder`](https://github.com/mapbox/mapbox-gl-geocoder) v5 against Mapbox Temporary Geocoding — the same token as the basemap, no Google key. Placeholder: **Busque por cidade, bairro, estado ou CEP**. Results are Brazil-only (`countries: 'br'`) inside the national camera bbox (`[-74, -34, -32, 6]`), with proximity at the national camera center `[-51.9, -14.2]` rather than Rio. Selecting a result `fitBounds` the map; there is no persistent pin. Full Brazilian CEPs (`XXXXX-XXX`) are resolved via [BrasilAPI](https://brasilapi.com.br/) (`/cep/v2`). Any UF with valid lat/lng inside the national box is accepted; CEPs are not dropped for being outside Rio.
 
@@ -233,7 +238,7 @@ Do not restore a standalone search chrome.
 
 ## Hover, click, and the stats surfaces
 
-Hover numbers live in the Mapbox **popup on the map** following the cursor (município below zoom 10, setor from zoom 10). Raça shows shares and population; Renda shows represented households, median, and mean; Óbitos (hidden) would show counts/shares by age with no sex breakdown. The popup sits at `z-index: 115` — above the fixed panel (114) — so hovering near the left edge is not hidden behind it.
+Hover numbers live in the Mapbox **popup on the map** following the cursor (município below zoom 10, setor from zoom 10 — titled **Vizinhança (recorte do Censo)**). Raça shows shares and population; Renda shows represented households and **Renda do domicílio** (the setor median; mean is omitted so the two figures cannot be confused); Mortes (hidden) would show counts/shares by age with no sex breakdown. The popup sits at `z-index: 115` — above the fixed panel (114) — so hovering near the left edge is not hidden behind it.
 
 A **click** on a polygon (desktop) additionally **docks the same numbers into the panel's bottom slot** (`#panel-stats`), mirroring the mobile tap dock: the reading stays put for comparison while the mouse keeps hovering elsewhere. An empty-map click, the **✕**, or a view switch dismisses it; it deliberately survives `clearHoverState` (mouseout/empty hover), pans, and zooms. All three surfaces (popup, panel slot, mobile dock) are fed by one query, `detailsAtPoint()`.
 
@@ -262,7 +267,7 @@ The sheet snaps between three `translateY` offsets, recomputed from live heights
 
 ### Chip rail (`#chip-rail`, peek state only)
 
-The always-visible legend while exploring: one pill chip per category of the active view (swatch + name, ≥44px tall, horizontal scroll for Renda's 7). **Tap toggles** the category; **long-press (500ms) solos** it (context menu suppressed; a moving finger cancels the press so rail scrolling works). The rail hides when the sheet expands (the full legend list takes over) or while a stats card is docked. The sheet headline reports filters so the map never lies silently: `Mostrando: Parda · …` when soloed, `Filtro: k de n categorias · …` for partial sets.
+The always-visible legend while exploring: one pill chip per group of the active view (swatch + name, ≥44px tall, horizontal scroll for Renda's 7). Renda chips use short labels (`Até 1`, `1 a 2`, … `10+`, `Sem info`); the full legend and the explainer still say “salário mínimo”. **Tap toggles** the group; **long-press (500ms) solos** it (context menu suppressed; a moving finger cancels the press so rail scrolling works). The rail hides when the sheet expands (the full legend list takes over) or while a stats card is docked. The sheet headline reports filters so the map never lies silently: `Só Parda · …` when soloed, `Mostrando k de n grupos · …` for partial sets.
 
 ### Floating controls
 
