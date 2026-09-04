@@ -1,6 +1,6 @@
 # Deploy
 
-The public map is [https://carabetta.xyz/dotsbr/](https://carabetta.xyz/dotsbr/). The GitHub repo is [JoaoCarabetta/dotsbr](https://github.com/JoaoCarabetta/dotsbr) (the old `dotmap` name redirects). `master` and `main` are production: a push of `index.html` or `og.jpg` deploys those files to the VPS. The old slug `/dataviz/brazildots/` 301s to `/dotsbr/`.
+The public map is [https://carabetta.xyz/dotsbr/](https://carabetta.xyz/dotsbr/). The GitHub repo is [JoaoCarabetta/dotsbr](https://github.com/JoaoCarabetta/dotsbr) (the old `dotmap` name redirects). `master` and `main` are production: a push of `index.html`, `og.jpg`, or the favicon files deploys those files to the VPS. The old slug `/dataviz/brazildots/` 301s to `/dotsbr/`. Production `index.html` loads Umami (`analytics.carabetta.xyz`, website **dotsbr-prod**); localhost does not. See [`user-analytics.md`](user-analytics.md).
 
 Nginx and the rest of carabetta.xyz live in the sibling `carabetta.xyz` repo. That repo deploys on push to `main` (its `master` branch is an older diverged line and is not wired to prod).
 
@@ -8,7 +8,7 @@ Nginx and the rest of carabetta.xyz live in the sibling `carabetta.xyz` repo. Th
 
 | Job | Repo | Uploads |
 |---|---|---|
-| `.github/workflows/deploy.yml` | this repo | `index.html` + `og.jpg` (WhatsApp/iMessage Open Graph card) |
+| `.github/workflows/deploy.yml` | this repo | `index.html` + `og.jpg` (WhatsApp/iMessage Open Graph card) + `favicon.svg` / `favicon.ico` / `apple-touch-icon.png` |
 | `.github/workflows/deploy.yml` | `carabetta.xyz` | site HTML + nginx; **not** PMTiles |
 
 The four archives (`censo2022.pmtiles`, `censo2022_income.pmtiles`, `censo2022_deaths.pmtiles`, `hover.pmtiles`) stay on the VPS at `/var/www/carabetta.xyz/dotsbr/data/tiles/`. They are gitignored (~700MB). Upload them from a machine that already has `data/tiles/`:

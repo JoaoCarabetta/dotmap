@@ -1,5 +1,5 @@
 # main/master == production for the public map at https://carabetta.xyz/dotsbr/
-# HTML + og.jpg share card — PMTiles stay on the VPS (gitignored, ~700MB).
+# HTML + og.jpg share card + favicons — PMTiles stay on the VPS (gitignored, ~700MB).
 name: Deploy production
 
 on:
@@ -10,6 +10,9 @@ on:
     paths:
       - index.html
       - og.jpg
+      - favicon.svg
+      - favicon.ico
+      - apple-touch-icon.png
       - deploy.sh
       - .github/workflows/deploy.yml
   workflow_dispatch:
@@ -51,7 +54,9 @@ jobs:
       - name: Smoke-check production
         run: |
           set -euo pipefail
-          code="$(curl -sI -o /tmp/dotsbr.hdr -w '%{http_code}' https://carabetta.xyz/dotsbr/)"
-          echo "GET /dotsbr/ → ${code}"
-          cat /tmp/dotsbr.hdr
-          test "$code" = "200"
+          for path in /dotsbr/ /dotsbr/og.jpg /dotsbr/favicon.ico /dotsbr/favicon.svg /dotsbr/apple-touch-icon.png; do
+            code="$(curl -sI -o /tmp/dotsbr.hdr -w '%{http_code}' "https://carabetta.xyz${path}")"
+            echo "GET ${path} → ${code}"
+            cat /tmp/dotsbr.hdr
+            test "$code" = "200"
+          done

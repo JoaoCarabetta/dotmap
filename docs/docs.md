@@ -1,4 +1,4 @@
-Agent instructions for this repo live in [`AGENTS.md`](../AGENTS.md). Project layout is in [`structure.md`](structure.md). How to serve the map from the versioned per-UF MBTiles (joined to PMTiles) is in [`local-setup.md`](local-setup.md). The public page is [https://carabetta.xyz/dotsbr/](https://carabetta.xyz/dotsbr/). How that URL is published (`main`/`master` → prod) is in [`deploy.md`](deploy.md).
+Agent instructions for this repo live in [`AGENTS.md`](../AGENTS.md). Project layout is in [`structure.md`](structure.md). How to serve the map from the versioned per-UF MBTiles (joined to PMTiles) is in [`local-setup.md`](local-setup.md). The public page is [https://carabetta.xyz/dotsbr/](https://carabetta.xyz/dotsbr/). How that URL is published (`main`/`master` → prod) is in [`deploy.md`](deploy.md). Product analytics (Umami, not Google Analytics) are in [`user-analytics.md`](user-analytics.md).
 
 # Zoom Levels and Dot Density Configuration
 
@@ -200,17 +200,19 @@ Body copy never says “(IBGE)” or “Censo Demográfico 2022” — those sta
 
 ## Link previews (WhatsApp / iMessage)
 
-Crawlers do not run the map JS, so the share card is **static tags in `<head>`** plus `og.jpg` next to `index.html`:
+Crawlers do not run the map JS, so the share card is **static tags at the top of `<head>`** (WhatsApp stops reading after a few KB, before the inline CSS) plus `og.jpg` next to `index.html`. A compact WhatsApp card with only **dotsbr** and the domain means the crawler took the `<title>` and dropped the image — usually a stale scrape from before `og.jpg` existed, not missing tags.
 
 | Tag | Value |
 |---|---|
 | `og:title` / `<title>` | **dotsbr** |
 | `og:description` / `description` | **O Brasil em pontos: cada ponto é um grupo de pessoas do Censo de 2022. Aproxime e veja o seu bairro.** (share hook, not the in-map explainer: race and income both color the dots, so the card must not lock to one view) |
 | `og:image:alt` | **Mapa do Brasil em pontos coloridos, feito com dados do Censo de 2022** |
-| `og:image` | `https://carabetta.xyz/dotsbr/og.jpg` (absolute; 1200×630 JPEG of the national race map, chrome hidden) |
+| `og:image` / `og:image:secure_url` | `https://carabetta.xyz/dotsbr/og.jpg?v=2` (absolute; 1200×630 JPEG of the national race map, chrome hidden; `?v=` busts a cached title-only scrape) |
 | `twitter:card` | `summary_large_image` (Slack / X also read this) |
 
-`og.jpg` is a crop of the live map at the Brazil frame (no panel, no search, no footer). Replace it the same way: hide chrome, screenshot, crop to 1200×630. WhatsApp caches the card hard — after a deploy, scrape again at [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/) or wait; sending the same URL in an old chat will keep the stale preview. Pasting the URL still uses this static card. The in-app **Compartilhar** button is a different path: it builds a JPEG of the *current* camera.
+The tab icon is a five-dot cluster in the census colors (`favicon.svg`, `favicon.ico`, `apple-touch-icon.png` 180×180), linked relatively so localhost resolves. WhatsApp's large card uses `og:image`, not the favicon.
+
+`og.jpg` is a crop of the live map at the Brazil frame (no panel, no search, no footer). Replace it the same way: hide chrome, screenshot, crop to 1200×630, then bump the `?v=` on `og:image` so scrapers fetch the new file. WhatsApp caches the card hard — after a deploy, scrape again at [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/) or paste `https://carabetta.xyz/dotsbr/?v=2` in a **new** chat; an old thread keeps the stale preview. The in-app **Compartilhar** button is a different path: it builds a JPEG of the *current* camera.
 
 ## Share button
 
@@ -292,6 +294,10 @@ A compact HUD is injected only on loopback hosts (`localhost`, `127.0.0.1`, `::1
 - **Cores** (localhost, Raça only): a select of 5-hue presets mapped to `branca`, `preta`, `amarela`, `parda`, `indigena`. The controls are hidden in Renda and Óbitos.
 - Camera jumps (localhost only, ignored while typing in search): **1** Brasil (`fitBounds` of the default country bbox), **2** Rio center `[-43.1729, -22.9068]` at zoom **15**. Same actions as the two HUD buttons.
 - Monospace overlay, not a product card. All logic stays in `index.html`. The panel scrolls if the color block would otherwise cover zoom/footer.
+
+# Analytics
+
+Production loads the shared Umami tracker at `analytics.carabetta.xyz` (website **dotsbr-prod**). Loopback hosts never inject it. There is no Google Analytics / GTM. Events and the dashboard are documented in [`user-analytics.md`](user-analytics.md).
 
 # Credits
 

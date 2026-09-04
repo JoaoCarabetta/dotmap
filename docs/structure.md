@@ -5,10 +5,13 @@ dotmap/
 ├── AGENTS.md                 # Instructions for coding agents
 ├── README.md                 # How to build tiles and serve the map locally
 ├── .github/workflows/deploy.yml  # main/master → https://carabetta.xyz/dotsbr/
-├── deploy.sh                 # rsync index.html + og.jpg (optional --tiles)
+├── deploy.sh                 # rsync index.html + og.jpg + favicons (optional --tiles)
 ├── deploy.env.example        # local SSH target; copy to gitignored deploy.env
 ├── index.html                # Map UI, Open Graph tags, share card, MapLibre + PMTiles logic
 ├── og.jpg                    # 1200×630 Open Graph / WhatsApp share image
+├── favicon.svg               # Tab icon (five census-color dots on light gray)
+├── favicon.ico               # 32×32 PNG-in-ICO fallback for older clients
+├── apple-touch-icon.png      # 180×180 iOS home-screen icon
 ├── debugger.html             # Legacy OpenLayers XYZ inspector (not the map path)
 ├── server.py                 # Optional Flask static server (port 8000, Range for PMTiles)
 ├── config.json               # Unused tileserver-gl leftover
@@ -36,6 +39,7 @@ dotmap/
 │   ├── fontes.md             # IBGE download URLs and raw-file caveats
 │   ├── local-setup.md        # How to merge tiles and serve locally
 │   ├── deploy.md             # CI and the public /dotsbr/ path
+│   ├── user-analytics.md     # Umami (pageviews + view_switch / share); not GA
 │   └── structure.md          # This file
 ├── assets/                   # Optional extras (not in git; unused by the current UI)
 ├── tiles/                    # race MBTiles versioned as tiles/{UF}; income/deaths built locally

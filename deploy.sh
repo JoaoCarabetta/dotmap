@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Publish index.html + og.jpg to https://carabetta.xyz/dotsbr/
+# Publish the page, share card and favicons to https://carabetta.xyz/dotsbr/
 # og.jpg is the WhatsApp/iMessage share card (Open Graph); without it the
-# preview is title-only. Tiles stay on the VPS. Pass --tiles to rsync
-# local data/tiles/*.pmtiles.
+# preview is title-only. Favicons sit next to the HTML so /dotsbr/favicon.ico
+# matches the <link rel="icon"> tags. Tiles stay on the VPS. Pass --tiles to
+# rsync local data/tiles/*.pmtiles.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -48,12 +49,16 @@ rsync_ssh() {
   fi
 }
 
-echo "Deploying map HTML and share image to ${SSH_TARGET}:${REMOTE_PATH}"
+echo "Deploying map HTML, share image and favicons to ${SSH_TARGET}:${REMOTE_PATH}"
 ssh_cmd "${SSH_TARGET}" "mkdir -p ${REMOTE_PATH}"
-# Same directory as the page so /dotsbr/og.jpg matches the absolute og:image.
+# Same directory as the page so /dotsbr/og.jpg matches the absolute og:image
+# and the relative favicon links resolve.
 rsync -avz -e "$(rsync_ssh)" \
   "${ROOT_DIR}/index.html" \
   "${ROOT_DIR}/og.jpg" \
+  "${ROOT_DIR}/favicon.svg" \
+  "${ROOT_DIR}/favicon.ico" \
+  "${ROOT_DIR}/apple-touch-icon.png" \
   "${SSH_TARGET}:${REMOTE_PATH}/"
 
 if [[ "${SYNC_TILES}" -eq 1 ]]; then
