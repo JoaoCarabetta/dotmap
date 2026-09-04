@@ -1,6 +1,6 @@
 # dotmap
 
-Mapa de densidade de pontos do Censo 2022 / IBGE. O nome do produto na UI é **dotsbr**. A UI mostra **Raça** e **Renda** (27 UFs). Óbitos está no pipeline/tiles mas oculto no seletor até a view ficar pronta. Frontend Mapbox GL JS; tiles vetoriais servidos localmente pelo tileserver-gl.
+Mapa de densidade de pontos do Censo 2022 / IBGE. A UI mostra **Raça** e **Renda** (27 UFs). Óbitos está no pipeline/tiles mas oculto no seletor até a view ficar pronta. Frontend MapLibre GL JS; tiles em PMTiles servidos da mesma origem (HTTP Range).
 
 Ao vivo: [https://carabetta.xyz/dataviz/brazildots/](https://carabetta.xyz/dataviz/brazildots/).
 
@@ -8,34 +8,29 @@ Guia completo: [docs/local-setup.md](docs/local-setup.md).
 
 ## Run locally (tiles already in the repo)
 
-A fresh clone does **not** include `data/` (gitignored). Merge the versioned per-zoom MBTiles first.
+A fresh clone does **not** include `data/` (gitignored). Merge the versioned per-zoom MBTiles into national PMTiles first.
 
-Dependencies: Node.js (for `npx tileserver-gl`), [tippecanoe](https://github.com/felt/tippecanoe) (`brew install tippecanoe`), [uv](https://docs.astral.sh/uv/).
+Dependencies: [tippecanoe](https://github.com/felt/tippecanoe) (`brew install tippecanoe`), [uv](https://docs.astral.sh/uv/). Node.js is only needed if you rebuild dots with mapshaper via `npx`.
 
 ```sh
 mkdir -p data/tiles
 # --no-tile-size-limit: default 500KB/tile drops SP+MG at z7 (~508KB).
-tile-join -f --no-tile-size-limit -o data/tiles/censo2022.mbtiles tiles/*/*/tiles.mbtiles
-tile-join -f --no-tile-size-limit -o data/tiles/censo2022_income.mbtiles tiles/income/*/*/tiles.mbtiles
-tile-join -f --no-tile-size-limit -o data/tiles/censo2022_deaths.mbtiles tiles/deaths/*/*/tiles.mbtiles
+# The .pmtiles extension is what the browser range-requests; do not gzip the file.
+tile-join -f --no-tile-size-limit -o data/tiles/censo2022.pmtiles tiles/*/*/tiles.mbtiles
+tile-join -f --no-tile-size-limit -o data/tiles/censo2022_income.pmtiles tiles/income/*/*/tiles.mbtiles
+tile-join -f --no-tile-size-limit -o data/tiles/censo2022_deaths.pmtiles tiles/deaths/*/*/tiles.mbtiles
 
-npx --yes tileserver-gl -c config.json -V
+python3 scripts/serve.py
 ```
 
-In another terminal:
+Open `http://localhost:8000`. Tiles come from `/data/tiles/censo2022.pmtiles` on the same port (HTTP 206 Range). Do not use `python -m http.server`: some Python 3.12 builds ignore `Range` and would send the whole archive.
 
-```sh
-uv run python -m http.server 8001
-```
-
-Open `http://localhost:8001`. Tiles come from `http://localhost:8080/data/censo2022/{z}/{x}/{y}.pbf` — that port is hardcoded in `index.html`.
-
-If 8000 is free you can use `uv run python -m http.server` instead (default 8000).
+`python3 scripts/serve.py --port 8001` if 8000 is taken. `uv run python server.py` is the Flask alternative.
 
 Without restoring extra files from elsewhere:
 
 - **Works:** light-v10 basemap (no labels, no satellite) + national **Raça** dots (zooms 3–14; 3–6 clustered setor). **Renda** needs a local `tile-join` of `tiles/income/` (theme MBTiles are built locally, not versioned here). **Óbitos** is hidden in the UI.
-- **404:** hover tiles (`data/tiles/hover.mbtiles`) until `python3 scripts/ibge_uf.py tiles`
+- **404:** hover tiles (`data/tiles/hover.pmtiles`) until `python3 scripts/ibge_uf.py tiles`
 
 ## Create the dataset from scratch
 
@@ -59,7 +54,7 @@ SKIP_TILE_JOIN=1 ./makefiles.sh RR income   # already done by the pair script
 
 printf '%s\n' AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO \
   | xargs -P 2 -n 1 ./scripts/build_theme_pair.sh
-tile-join -f --no-tile-size-limit -o data/tiles/censo2022_income.mbtiles tiles/income/*/*/tiles.mbtiles
-tile-join -f --no-tile-size-limit -o data/tiles/censo2022_deaths.mbtiles tiles/deaths/*/*/tiles.mbtiles
+tile-join -f --no-tile-size-limit -o data/tiles/censo2022_income.pmtiles tiles/income/*/*/tiles.mbtiles
+tile-join -f --no-tile-size-limit -o data/tiles/censo2022_deaths.pmtiles tiles/deaths/*/*/tiles.mbtiles
 python3 scripts/ibge_uf.py
 ```

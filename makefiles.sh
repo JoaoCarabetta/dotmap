@@ -69,7 +69,7 @@ echo ">> Fields for Mapshaper: $fields"
 echo ">> Creating tiles directory for ${UF}"
 mkdir -p $tiles_directory
 
-# mapshaper is not always on PATH; npx matches how tileserver-gl is invoked.
+# mapshaper is not always on PATH; npx is the same fallback as other Node CLIs.
 if command -v mapshaper >/dev/null 2>&1; then
     MAPSHAPER=(mapshaper)
 else
@@ -158,9 +158,11 @@ echo ">> Merging tilesets from all UFs"
 mkdir -p data/tiles
 if [ "$THEME" = "race" ]; then
     # Default 500KB/tile drops SP+MG at z7 and leaves São Paulo blank.
-    tile-join -f --no-tile-size-limit -o "data/tiles/censo2022.mbtiles" tiles/*/*/tiles.mbtiles
+    # Extension selects the container: the browser reads this PMTiles file
+    # directly (no tileserver). Per-UF inputs stay MBTiles.
+    tile-join -f --no-tile-size-limit -o "data/tiles/censo2022.pmtiles" tiles/*/*/tiles.mbtiles
 else
     # Theme glob is isolated so prototype MBTiles cannot absorb race tiles.
-    tile-join -f --no-tile-size-limit -o "data/tiles/censo2022_${THEME}.mbtiles" "tiles/${THEME}"/*/*/tiles.mbtiles
+    tile-join -f --no-tile-size-limit -o "data/tiles/censo2022_${THEME}.pmtiles" "tiles/${THEME}"/*/*/tiles.mbtiles
 fi
 echo ">> Done"

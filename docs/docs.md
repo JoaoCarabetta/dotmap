@@ -1,4 +1,4 @@
-Agent instructions for this repo live in [`AGENTS.md`](../AGENTS.md). Project layout is in [`structure.md`](structure.md). How to serve the map from the versioned MBTiles is in [`local-setup.md`](local-setup.md). The public page is [https://carabetta.xyz/dataviz/brazildots/](https://carabetta.xyz/dataviz/brazildots/).
+Agent instructions for this repo live in [`AGENTS.md`](../AGENTS.md). Project layout is in [`structure.md`](structure.md). How to serve the map from the versioned per-UF MBTiles (joined to PMTiles) is in [`local-setup.md`](local-setup.md). The public page is [https://carabetta.xyz/dataviz/brazildots/](https://carabetta.xyz/dataviz/brazildots/).
 
 # Zoom Levels and Dot Density Configuration
 
@@ -6,7 +6,7 @@ This document describes the relationship between zoom levels and dot density in 
 
 The UI switches between **Raça** and **Renda**, both with 27-UF coverage. Renda dots represent occupied permanent private households and are colored by the setor median income of responsible persons with income.
 
-**Óbitos is built but hidden from the UI for now**: the tiles (`tiles/deaths/`, `censo2022_deaths` in `config.json`), the makefiles theme, and the `deaths` entry in `VIEW_CONFIGS` all stay, but the switcher buttons were removed and `HIDDEN_VIEWS` in `index.html` makes `setView('deaths')` a no-op (persisted `dotmap-view: deaths` falls back to race on load). Óbitos dots represent deaths reported for January 2019–July 2022, colored by age at death; sex is summed, not shown. To un-hide: restore the button in both switchers and drop `deaths` from `HIDDEN_VIEWS`.
+**Óbitos is built but hidden from the UI for now**: the tiles (`tiles/deaths/`, `censo2022_deaths.pmtiles`), the makefiles theme, and the `deaths` entry in `VIEW_CONFIGS` all stay, but the switcher buttons were removed and `HIDDEN_VIEWS` in `index.html` makes `setView('deaths')` a no-op (persisted `dotmap-view: deaths` falls back to race on load). Óbitos dots represent deaths reported for January 2019–July 2022, colored by age at death; sex is summed, not shown. To un-hide: restore the button in both switchers and drop `deaths` from `HIDDEN_VIEWS`.
 
 ## Configuration Table
 
@@ -77,9 +77,9 @@ Hover on the map is a different cutoff: município polygons below zoom 10, setor
 
 - **Clustered setor (zoom 3–6):** Adjacent census tracts of the same density class are dissolved until each polygon has about `per_dot` people (4 500 / 2 000 / 900 / 400). Dots stay on the urban/povoado footprint instead of filling the município. All 27 UFs use this level.
 - **Census tract (zoom 7–14):** One polygon per setor. z7 is 150 people/dot, so 6→7 is a ~2.7× refinement of the same settlement pattern.
-- Recorte atual dos pontos: **27 UFs** (cobertura nacional). Hover de município/setor vem de `data/tiles/hover.mbtiles` (não do GeoJSON concatenado): o `census_tract.geojson` nacional (~248 MB) trava o Mapbox no zoom alto.
-- The Mapbox map `minZoom` option is exclusive (`zoom > min`), so `index.html` sets it to **2** in order to reach the z=3 tiles. Camera `maxZoom` is **15** so the local Rio shortcut can overzoom; the vector source still advertises `minzoom: 3` / `maxzoom: 14` (no z=15 PBF).
-- The map **opens on Brazil, not Rio**: constructor fallback `[-51.9, -14.2]` at zoom 3.5, then a camera calculated from `[[-74, -34], [-32, 6]]`. When that whole-country fit would fall below the first point tiles on a narrow portrait screen, startup keeps the national center and clamps to zoom 3.01 so dots render instead of showing an empty overview. Point tiles cover all 27 UFs. A `tile-join` without `--no-tile-size-limit` still drops the SP+MG overlap at z7 (XYZ `7/47/72`, ~508 KB vs the 500 KB default) and leaves São Paulo blank even though `tiles/SP/` is complete.
+- Recorte atual dos pontos: **27 UFs** (cobertura nacional). Hover de município/setor vem de `data/tiles/hover.pmtiles` (não do GeoJSON concatenado): o `census_tract.geojson` nacional (~248 MB) trava o mapa no zoom alto.
+- MapLibre treats `minZoom` as inclusive, so `index.html` sets it to **3** (first point tileset). Camera `maxZoom` is **15** so the local Rio shortcut can overzoom; the vector source still advertises `minzoom: 3` / `maxzoom: 14` (no z=15 PBF). Archives are same-origin PMTiles (`data/tiles/*.pmtiles`); do not gzip them.
+- The map **opens on Brazil, not Rio**: constructor fallback `[-51.9, -14.2]` at zoom 3.5, then a camera calculated from `[[-74, -34], [-32, 6]]`. When that whole-country fit would fall below the first point tiles on a narrow portrait screen, startup keeps the national center and clamps to zoom 3 so dots render instead of showing an empty overview. Point tiles cover all 27 UFs. A `tile-join` without `--no-tile-size-limit` still drops the SP+MG overlap at z7 (XYZ `7/47/72`, ~508 KB vs the 500 KB default) and leaves São Paulo blank even though `tiles/SP/` is complete.
 - Circle radius is a linear interpolate on stops 3 / 7 / 12 / 13 (`0.96` → `0.96` → `1.36` → `2.16` px): ×1.2 everywhere, then an extra ×1.5 from zoom 13 (held through 15). The z12 stop keeps the 50% kick from ramping in at 12. People-per-dot is unchanged.
 
 # Demographic Data Structure
@@ -163,7 +163,7 @@ This mapping is the product default (`circle-color` match + legend swatches) and
 
 # Map chrome
 
-The map is full-bleed (`#map` is `100vw` / `100vh`). There is **no** fixed header and **no left icon rail**. Desktop chrome is **one floating panel** top-left (`.chrome-stack` → `.intro-card`, 14px inset) plus a slim full-width footer (~32px, data/IBGE on the left, GitHub / Carabetta / © on the right). The old bottom-left legend card is gone — the legend moved into the panel, so the map's lower-left quadrant stays clear. Zoom `+/-` stays at the bottom-right, just above the footer. The first camera uses the Brazil bounds `[[-74, -34], [-32, 6]]`; narrow portrait screens keep that center at zoom 3.01 so the z3 dots remain visible. Search uses the same national box (flattened to Mapbox `[minLng, minLat, maxLng, maxLat]` → `[-74, -34, -32, 6]`).
+The map is full-bleed (`#map` is `100vw` / `100vh`). There is **no** fixed header and **no left icon rail**. Desktop chrome is **one floating panel** top-left (`.chrome-stack` → `.intro-card`, 14px inset) plus a slim full-width footer (~32px, data/IBGE on the left, GitHub / Carabetta / © on the right). The old bottom-left legend card is gone — the legend moved into the panel, so the map's lower-left quadrant stays clear. Zoom `+/-` stays at the bottom-right, just above the footer. The first camera uses the Brazil bounds `[[-74, -34], [-32, 6]]`; narrow portrait screens keep that center at zoom 3 so the z3 dots remain visible. Search uses the same national box (flattened to Mapbox `[minLng, minLat, maxLng, maxLat]` → `[-74, -34, -32, 6]`).
 
 ## The panel (`.intro-card`)
 
