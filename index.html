@@ -367,6 +367,9 @@
             color: #666;
         }
 
+        /* Two-side bar: IBGE/data stays left, GitHub + brand + © pin right.
+           space-between + margin-left:auto on .footer-right so the credit
+           cluster stays flush-right even if the bar wraps on a mid-width window. */
         .map-footer {
             position: fixed;
             left: 0;
@@ -378,14 +381,26 @@
             padding: 6px 14px;
             display: flex;
             flex-wrap: wrap;
+            justify-content: space-between;
             align-items: center;
-            gap: 2px 0;
+            gap: 2px 16px;
             background: #fff;
             box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.08);
             font-family: var(--chrome-font);
             font-size: 11px;
             line-height: 1.4;
             color: #5f6368;
+        }
+
+        .footer-left,
+        .footer-right {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .footer-right {
+            margin-left: auto;
         }
 
         .map-footer a {
@@ -1103,13 +1118,17 @@
     </div>
 </div>
 <footer class="map-footer" id="map-footer">
-    <!-- .footer-extra items hide on phones so the strip stays one line;
-         data source, repo, and Carabetta.xyz credits always remain. -->
-    <span>Dados:&nbsp;<a href="https://ftp.ibge.gov.br/Censos/Censo_Demografico_2022/Agregados_por_Setores_Censitarios/" target="_blank" rel="noopener noreferrer">IBGE</a></span><span class="map-footer-sep">·</span>
-    <span class="footer-extra"><a href="https://basedosdados.org/dataset/08a1546e-251f-4546-9fe0-b1e6ab2b203d" target="_blank" rel="noopener noreferrer">Censo Demográfico 2022</a><span class="map-footer-sep">·</span></span>
-    <a href="https://github.com/JoaoCarabetta/dotmap" target="_blank" rel="noopener noreferrer">GitHub</a><span class="map-footer-sep">·</span>
-    <a href="https://carabetta.xyz" target="_blank" rel="noopener noreferrer">Carabetta.xyz</a>
-    <span class="footer-extra"><span class="map-footer-sep">·</span>© 2026 Carabetta.xyz</span>
+    <!-- Desktop only (the ≤640px sheet has its own .sheet-credits).
+         Left = data/IBGE; right = repo + brand + ©. -->
+    <span class="footer-left">
+        <span>Dados:&nbsp;<a href="https://ftp.ibge.gov.br/Censos/Censo_Demografico_2022/Agregados_por_Setores_Censitarios/" target="_blank" rel="noopener noreferrer">IBGE</a></span><span class="map-footer-sep">·</span>
+        <span class="footer-extra"><a href="https://basedosdados.org/dataset/08a1546e-251f-4546-9fe0-b1e6ab2b203d" target="_blank" rel="noopener noreferrer">Censo Demográfico 2022</a></span>
+    </span>
+    <span class="footer-right">
+        <a href="https://github.com/JoaoCarabetta/dotmap" target="_blank" rel="noopener noreferrer">GitHub</a><span class="map-footer-sep">·</span>
+        <a href="https://carabetta.xyz" target="_blank" rel="noopener noreferrer">Carabetta.xyz</a>
+        <span class="footer-extra"><span class="map-footer-sep">·</span>© 2026 Carabetta.xyz</span>
+    </span>
 </footer>
 
 <!-- Mobile-only chrome (≤640px): one bottom sheet replaces intro card, legend
@@ -1247,7 +1266,6 @@
     
     // Bottom-right like Google Maps zoom +/-; compass stays off so the stack is just +/−.
     map.addControl(new mapboxgl.NavigationControl({showCompass: false}), 'bottom-right');
-    map.scrollZoom.disable();
 
     // Temporary Geocoding via the official plugin: city / CEP / address without a Google key.
     // Dots cover all 27 UFs, so search uses the same national box as the camera
