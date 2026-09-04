@@ -1,4 +1,4 @@
-Agent instructions for this repo live in [`AGENTS.md`](../AGENTS.md). Project layout is in [`structure.md`](structure.md). How to serve the map from the versioned MBTiles is in [`local-setup.md`](local-setup.md). The public page is [https://carabetta.xyz/dataviz/brazildots/](https://carabetta.xyz/dataviz/brazildots/).
+Agent instructions for this repo live in [`AGENTS.md`](../AGENTS.md). Project layout is in [`structure.md`](structure.md). How to serve the map from the versioned per-UF MBTiles (joined to PMTiles) is in [`local-setup.md`](local-setup.md). The public page is [https://carabetta.xyz/dataviz/brazildots/](https://carabetta.xyz/dataviz/brazildots/).
 
 # Zoom Levels and Dot Density Configuration
 
@@ -6,7 +6,7 @@ This document describes the relationship between zoom levels and dot density in 
 
 The UI switches between **Raça** and **Renda**, both with 27-UF coverage. Renda dots represent occupied permanent private households and are colored by the setor median income of responsible persons with income.
 
-**Óbitos is built but hidden from the UI for now**: the tiles (`tiles/deaths/`, `censo2022_deaths` in `config.json`), the makefiles theme, and the `deaths` entry in `VIEW_CONFIGS` all stay, but the switcher buttons were removed and `HIDDEN_VIEWS` in `index.html` makes `setView('deaths')` a no-op (persisted `dotmap-view: deaths` falls back to race on load). Óbitos dots represent deaths reported for January 2019–July 2022, colored by age at death; sex is summed, not shown. To un-hide: restore the button in both switchers and drop `deaths` from `HIDDEN_VIEWS`.
+**Óbitos is built but hidden from the UI for now**: the tiles (`tiles/deaths/`, `censo2022_deaths.pmtiles`), the makefiles theme, and the `deaths` entry in `VIEW_CONFIGS` all stay, but the switcher buttons were removed and `HIDDEN_VIEWS` in `index.html` makes `setView('deaths')` a no-op (persisted `dotmap-view: deaths` falls back to race on load). Óbitos dots represent deaths reported for January 2019–July 2022, colored by age at death; sex is summed, not shown. To un-hide: restore the button in both switchers and drop `deaths` from `HIDDEN_VIEWS`.
 
 ## Configuration Table
 
@@ -77,9 +77,9 @@ Hover on the map is a different cutoff: município polygons below zoom 10, setor
 
 - **Clustered setor (zoom 3–6):** Adjacent census tracts of the same density class are dissolved until each polygon has about `per_dot` people (4 500 / 2 000 / 900 / 400). Dots stay on the urban/povoado footprint instead of filling the município. All 27 UFs use this level.
 - **Census tract (zoom 7–14):** One polygon per setor. z7 is 150 people/dot, so 6→7 is a ~2.7× refinement of the same settlement pattern.
-- Recorte atual dos pontos: **27 UFs** (cobertura nacional). Hover de município/setor vem de `data/tiles/hover.mbtiles` (não do GeoJSON concatenado): o `census_tract.geojson` nacional (~248 MB) trava o Mapbox no zoom alto.
-- The Mapbox map `minZoom` option is exclusive (`zoom > min`), so `index.html` sets it to **2** in order to reach the z=3 tiles. Camera `maxZoom` is **15** so the local Rio shortcut can overzoom; the vector source still advertises `minzoom: 3` / `maxzoom: 14` (no z=15 PBF).
-- The map **opens on Brazil, not Rio**: constructor fallback `[-51.9, -14.2]` at zoom 3.5, then a camera calculated from `[[-74, -34], [-32, 6]]`. When that whole-country fit would fall below the first point tiles on a narrow portrait screen, startup keeps the national center and clamps to zoom 3.01 so dots render instead of showing an empty overview. Point tiles cover all 27 UFs. A `tile-join` without `--no-tile-size-limit` still drops the SP+MG overlap at z7 (XYZ `7/47/72`, ~508 KB vs the 500 KB default) and leaves São Paulo blank even though `tiles/SP/` is complete.
+- Recorte atual dos pontos: **27 UFs** (cobertura nacional). Hover de município/setor vem de `data/tiles/hover.pmtiles` (não do GeoJSON concatenado): o `census_tract.geojson` nacional (~248 MB) trava o mapa no zoom alto.
+- MapLibre treats `minZoom` as inclusive, so `index.html` sets it to **3** (first point tileset). Camera `maxZoom` is **15** so the local Rio shortcut can overzoom; the vector source still advertises `minzoom: 3` / `maxzoom: 14` (no z=15 PBF). Archives are same-origin PMTiles (`data/tiles/*.pmtiles`); do not gzip them.
+- The map **opens on Brazil, not Rio**: constructor fallback `[-51.9, -14.2]` at zoom 3.5, then a camera calculated from `[[-74, -34], [-32, 6]]`. When that whole-country fit would fall below the first point tiles on a narrow portrait screen, startup keeps the national center and clamps to zoom 3 so dots render instead of showing an empty overview. Point tiles cover all 27 UFs. A `tile-join` without `--no-tile-size-limit` still drops the SP+MG overlap at z7 (XYZ `7/47/72`, ~508 KB vs the 500 KB default) and leaves São Paulo blank even though `tiles/SP/` is complete.
 - Circle radius is a linear interpolate on stops 3 / 7 / 12 / 13 (`0.96` → `0.96` → `1.36` → `2.16` px): ×1.2 everywhere, then an extra ×1.5 from zoom 13 (held through 15). The z12 stop keeps the 50% kick from ramping in at 12. People-per-dot is unchanged.
 
 # Demographic Data Structure
@@ -163,13 +163,13 @@ This mapping is the product default (`circle-color` match + legend swatches) and
 
 # Map chrome
 
-The map is full-bleed (`#map` is `100vw` / `100vh`). There is **no** fixed header and **no left icon rail**. Desktop chrome is **one floating panel** top-left (`.chrome-stack` → `.intro-card`, 14px inset) plus a slim full-width footer (~32px, data/IBGE on the left, GitHub / Carabetta / © on the right). The old bottom-left legend card is gone — the legend moved into the panel, so the map's lower-left quadrant stays clear. Zoom `+/-` stays at the bottom-right, just above the footer. The first camera uses the Brazil bounds `[[-74, -34], [-32, 6]]`; narrow portrait screens keep that center at zoom 3.01 so the z3 dots remain visible. Search uses the same national box (flattened to Mapbox `[minLng, minLat, maxLng, maxLat]` → `[-74, -34, -32, 6]`).
+The map is full-bleed (`#map` is `100vw` / `100vh`). There is **no** fixed header and **no left icon rail**. Desktop chrome is **one floating panel** top-left (`.chrome-stack` → `.intro-card`, 14px inset) plus a slim full-width footer (~32px, data/IBGE on the left, GitHub / Carabetta / © on the right). The old bottom-left legend card is gone — the legend moved into the panel, so the map's lower-left quadrant stays clear. Zoom `+/-` stays at the bottom-right, just above the footer. The first camera uses the Brazil bounds `[[-74, -34], [-32, 6]]`; narrow portrait screens keep that center at zoom 3 so the z3 dots remain visible. Search uses the same national box (flattened to Mapbox `[minLng, minLat, maxLng, maxLat]` → `[-74, -34, -32, 6]`).
 
 ## The panel (`.intro-card`)
 
 White rounded card, top-left, story-first — the mobile sheet's reading order applied to desktop:
 
-1. **h1 with the active lens**: `Onde o Brasil mora por Raça/Renda` (`#intro-title`, rewritten live by `setView`, same "por <label>" pattern as the mobile sheet title; Óbitos would follow the same pattern when un-hidden).
+1. **h1 with the active lens**: `dotsbr por Raça/Renda` (`#intro-title`, rewritten live by `setView`, same "por <label>" pattern as the mobile sheet title; Óbitos would follow the same pattern when un-hidden).
 2. **Hero scale line** (`#dot-scale`, ~15px semibold): `1 ponto = N unidades`, updated on zoom and prefixed with filter state exactly like the sheet headline (`Mostrando: Parda · …` when soloed, `Filtro: k de n categorias · …` for partial sets). It was an 11px footnote in the old legend card; it is the number that keeps the map honest, so it leads.
 3. **Raça / Renda** switcher (view stored as `dotmap-view`; switching does not move the camera; Óbitos hidden — see the views note at the top).
 4. Explainer.
@@ -178,11 +178,11 @@ White rounded card, top-left, story-first — the mobile sheet's reading order a
 
 Search is **not** inside the panel: the geocoder floats as a white pill **immediately to the right of the panel, top-aligned** (`#desk-search`, anchored to the stack with `left: calc(100% + 12px)` so it tracks the card width). Suggestions drop over the map, never clipped by the card.
 
-The page `<title>` stays the plain **Onde o Brasil mora** (tab labels should not churn on view switch); only the h1 carries the lens suffix. The explainer (`p.intro-explainer`) is:
+The page `<title>` stays the plain **dotsbr** (tab labels should not churn on view switch); only the h1 carries the lens suffix. The explainer (`p.intro-explainer`) is:
 
 **Cada ponto é um grupo de pessoas. A cor é a raça declarada no Censo Demográfico 2022 (IBGE). O número de pessoas por ponto muda com o zoom.**
 
-Do not say “um ponto por pessoa”: one dot is N units and N changes with zoom. Do not restore the old h1 “Distribuição Racial no Brasil” (too close to Pata’s 2015 *Mapa Racial do Brasil*). The income and mortality views rewrite the explanation and swap the h1's `por <label>` suffix; the product name before “por” never changes.
+Do not say “um ponto por pessoa”: one dot is N units and N changes with zoom. Do not restore the old h1 “Distribuição Racial no Brasil” (too close to Pata’s 2015 *Mapa Racial do Brasil*) or the previous product name “Onde o Brasil mora”. The income and mortality views rewrite the explanation and swap the h1's `por <label>` suffix; the product name before “por” never changes.
 
 Search sits in the floating pill **to the right of the panel** on desktop (on phones the same geocoder pins to the top of the screen — see the mobile chrome section), powered by [`mapbox-gl-geocoder`](https://github.com/mapbox/mapbox-gl-geocoder) v5 against Mapbox Temporary Geocoding — the same token as the basemap, no Google key. Placeholder: **Busque por cidade, bairro, estado ou CEP**. Results are Brazil-only (`countries: 'br'`) inside the national camera bbox (`[-74, -34, -32, 6]`), with proximity at the national camera center `[-51.9, -14.2]` rather than Rio. Selecting a result `fitBounds` the map; there is no persistent pin. Full Brazilian CEPs (`XXXXX-XXX`) are resolved via [BrasilAPI](https://brasilapi.com.br/) (`/cep/v2`). Any UF with valid lat/lng inside the national box is accepted; CEPs are not dropped for being outside Rio.
 
@@ -208,14 +208,14 @@ The sheet snaps between three `translateY` offsets, recomputed from live heights
 
 | State | What shows | How you get there |
 |---|---|---|
-| **peek** | drag handle + **Onde o Brasil mora por Raça/Renda** (title carries the active lens, updated live on view switch; label matches the switcher) + live `1 ponto = N unidades` line | drag down, tap header, or tap the map while open |
+| **peek** | drag handle + **dotsbr por Raça/Renda** (title carries the active lens, updated live on view switch; label matches the switcher) + live `1 ponto = N unidades` line | drag down, tap header, or tap the map while open |
 | **half** (~52vh, ≤400px) | + Raça/Renda switcher, explainer | drag, or tap header from peek |
 | **full** (92dvh) | + 44px legend rows with **S** solo buttons, **credits** | drag up |
 
 - **First visit opens at half** so the story (title, scale, lens, explainer) shows once; afterwards the last snap state wins for the session (`sessionStorage` key `dotmap-sheet-state`).
 - Drag only works from the **header** (handle + title strip, `touch-action: none`); the content area keeps native scrolling, which only unlocks in the full state (`body.m-sheet-full`) so scroll and drag never fight.
 - Tapping the **map** while the sheet is at half/full collapses it to peek first; details come on the next tap.
-- The product name is never hidden — it is the first line of every state, suffixed with the active view (`#sheet-title`, e.g. **Onde o Brasil mora por Renda**). The desktop `h1` (`#intro-title`) uses the same `por <label>` suffix; only the page `<title>` stays the plain product name.
+- The product name is never hidden — it is the first line of every state, suffixed with the active view (`#sheet-title`, e.g. **dotsbr por Renda**). The desktop `h1` (`#intro-title`) uses the same `por <label>` suffix; only the page `<title>` stays the plain product name.
 
 ### Chip rail (`#chip-rail`, peek state only)
 

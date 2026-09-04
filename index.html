@@ -2,11 +2,14 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Onde o Brasil mora</title>
+    <title>dotsbr</title>
     <!-- viewport-fit=cover lets the map paint under the notch; safe-area insets keep the chrome out of it. -->
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <script src="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.js"></script>
-    <link href="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.css" rel="stylesheet">
+    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+    <script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js"></script>
+    <!-- Geocoder still talks to the Mapbox API; alias so it can drive MapLibre. -->
+    <script>var mapboxgl = maplibregl;</script>
     <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.3/mapbox-gl-geocoder.min.js"></script>
     <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.3/mapbox-gl-geocoder.css">
     <style>
@@ -317,11 +320,11 @@
         /* Map tooltip follows the cursor; the panel is story + filter + stats.
            z-index beats the fixed panel (114): hover numbers near the left
            edge must not hide behind it. */
-        .mapboxgl-popup {
+        .maplibregl-popup {
             z-index: 115;
         }
 
-        .mapboxgl-popup-content {
+        .maplibregl-popup-content {
             background-color: white;
             padding: 5px 8px;
             line-height: 1.4;
@@ -332,7 +335,7 @@
             font-size: 12px;
         }
 
-        .mapboxgl-popup-tip {
+        .maplibregl-popup-tip {
             visibility: hidden;
         }
 
@@ -419,17 +422,17 @@
         }
 
         /* Sit zoom just above the footer so +/- is not covered. */
-        .mapboxgl-ctrl-bottom-left {
+        .maplibregl-ctrl-bottom-left {
             left: 8px;
             bottom: calc(var(--footer-height) + 8px);
         }
 
-        .mapboxgl-ctrl-bottom-right {
+        .maplibregl-ctrl-bottom-right {
             right: 16px;
             bottom: calc(var(--footer-height) + 8px);
         }
 
-        .mapboxgl-ctrl-group {
+        .maplibregl-ctrl-group {
             background: #fff !important;
             border: none !important;
             border-radius: 8px !important;
@@ -437,11 +440,11 @@
             overflow: hidden;
         }
 
-        .mapboxgl-ctrl-group button {
+        .maplibregl-ctrl-group button {
             border-bottom: 1px solid #ddd !important;
         }
 
-        .mapboxgl-ctrl-group button:last-child {
+        .maplibregl-ctrl-group button:last-child {
             border-bottom: none !important;
         }
 
@@ -983,16 +986,16 @@
                NavigationControl still mounts (desktop uses it); hiding it here
                also removes it from hit-testing, so touches pass to the map.
                Mapbox attribution (ⓘ) stays, lifted above the chip rail. */
-            .mapboxgl-ctrl-bottom-right .mapboxgl-ctrl-group {
+            .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group {
                 display: none;
             }
 
-            .mapboxgl-ctrl-bottom-right {
+            .maplibregl-ctrl-bottom-right {
                 right: calc(10px + env(safe-area-inset-right, 0px));
                 bottom: calc(var(--m-peek-h) + 62px);
             }
 
-            .mapboxgl-ctrl-bottom-left {
+            .maplibregl-ctrl-bottom-left {
                 bottom: calc(var(--m-peek-h) + 62px);
             }
 
@@ -1022,7 +1025,7 @@
      corners. Mobile (≤640px) hides the whole stack and uses the sheet. -->
 <div class="chrome-stack" id="chrome-stack">
 <aside class="intro-card" id="intro-card" aria-label="Sobre o mapa">
-    <h1 class="intro-title" id="intro-title">Onde o Brasil mora por Raça</h1>
+    <h1 class="intro-title" id="intro-title">dotsbr por Raça</h1>
     <!-- The hero line: the one number that keeps the map honest. Reports
          filters too ("Mostrando: Parda · …"), same contract as the sheet. -->
     <p class="dot-scale" id="dot-scale">1 ponto = 4.500 pessoas</p>
@@ -1150,14 +1153,14 @@
         <div class="stats-dock-body" id="stats-dock-body"></div>
     </div>
 
-    <section class="sheet" id="sheet" role="region" aria-label="Onde o Brasil mora">
+    <section class="sheet" id="sheet" role="region" aria-label="dotsbr">
         <!-- Grab zone: drag anywhere here to snap peek/half/full; tap toggles. -->
         <div class="sheet-header" id="sheet-header">
             <div class="sheet-handle" aria-hidden="true"></div>
             <!-- Product name first, then the active lens ("por Raça/Renda/Óbitos",
                  same label as the switcher): the title is visible in every snap
                  state, so it must say what the map is showing. -->
-            <p class="sheet-title" id="sheet-title">Onde o Brasil mora por Raça</p>
+            <p class="sheet-title" id="sheet-title">dotsbr por Raça</p>
             <p class="sheet-scale" id="sheet-scale">1 ponto = 4.500 pessoas</p>
         </div>
         <div class="sheet-content" id="sheet-content">
@@ -1180,23 +1183,51 @@
 </div>
 
 <script>
-    mapboxgl.accessToken = 'pk.eyJ1IjoiZXNjcml0b3Jpb2RlZGFkb3MiLCJhIjoiY2t3bWdmcHpjMmJ2cTJucWJ4MGQ1Mm1kbiJ9.4hHJX-1pSevYoBbja7Pq4w';
+    // Token is only for the Mapbox Geocoding API and the light-v10 style JSON.
+    // Point tiles are local PMTiles — MapLibre cannot resolve mapbox:// style URLs.
+    const MAPBOX_TOKEN = 'pk.eyJ1IjoiZXNjcml0b3Jpb2RlZGFkb3MiLCJhIjoiY2t3bWdmcHpjMmJ2cTJucWJ4MGQ1Mm1kbiJ9.4hHJX-1pSevYoBbja7Pq4w';
+    mapboxgl.accessToken = MAPBOX_TOKEN;
 
-    var map = new mapboxgl.Map({
+    // Same-origin archive next to index.html: /data/tiles/foo.pmtiles locally,
+    // /dataviz/brazildots/data/tiles/foo.pmtiles on the public page.
+    function pmtilesUrl(name) {
+        const dir = location.pathname.replace(/[^/]*$/, '');
+        return new URL('data/tiles/' + name + '.pmtiles', location.origin + dir).href;
+    }
+
+    const protocol = new pmtiles.Protocol();
+    maplibregl.addProtocol('pmtiles', protocol.tile);
+
+    var map = new maplibregl.Map({
         container: 'map',
-        style: 'mapbox://styles/mapbox/light-v10',
+        style: 'https://api.mapbox.com/styles/v1/mapbox/light-v10?access_token=' + MAPBOX_TOKEN,
         // Country overview until fitBounds runs; geographic center of continental Brazil.
         center: [-51.9, -14.2],
         zoom: 3.5,
         // Camera can overzoom to 15 (dev Rio shortcut); PBF tiles still stop at 14.
         maxZoom: 15,
-        // Mapbox treats minZoom as exclusive (visible when zoom > min), so 2 is required to reach the z=3 tiles.
-        minZoom: 2
+        // MapLibre treats minZoom as inclusive; first point tiles are z=3.
+        minZoom: 3,
+        // light-v10 JSON still uses mapbox:// for streets, sprite, and fonts.
+        // MapLibre will not resolve those; rewrite to the Mapbox REST hosts.
+        transformRequest: function (url) {
+            if (url.indexOf('mapbox://') !== 0) return { url: url };
+            const q = 'access_token=' + MAPBOX_TOKEN;
+            if (url.indexOf('mapbox://sprites/') === 0) {
+                return { url: 'https://api.mapbox.com/styles/v1/' + url.slice(17) + '/sprite?' + q };
+            }
+            if (url.indexOf('mapbox://fonts/') === 0) {
+                return { url: 'https://api.mapbox.com/fonts/v1/' + url.slice(15) + '?' + q };
+            }
+            return { url: 'https://api.mapbox.com/v4/' + url.slice(9) + '.json?secure&' + q };
+        }
     });
 
     // SW/NE so Norte (Amapá), Sul (RS), Acre, and the Atlantic stay on screen across viewports.
     const BRAZIL_BOUNDS = [[-74, -34], [-32, 6]];
     const VIEW_STORAGE = 'dotmap-view';
+    // Public name on the tab and in "por <lens>" titles. Repo and storage keys stay `dotmap`.
+    const PRODUCT_NAME = 'dotsbr';
     const VIEW_CONFIGS = {
         race: {
             layer: 'points',
@@ -1265,7 +1296,7 @@
     const phoneLayout = window.matchMedia('(max-width: 640px)');
     
     // Bottom-right like Google Maps zoom +/-; compass stays off so the stack is just +/−.
-    map.addControl(new mapboxgl.NavigationControl({showCompass: false}), 'bottom-right');
+    map.addControl(new maplibregl.NavigationControl({showCompass: false}), 'bottom-right');
 
     // Temporary Geocoding via the official plugin: city / CEP / address without a Google key.
     // Dots cover all 27 UFs, so search uses the same national box as the camera
@@ -1320,8 +1351,8 @@
     }
 
     const geocoder = new MapboxGeocoder({
-        accessToken: mapboxgl.accessToken,
-        mapboxgl: mapboxgl,
+        accessToken: MAPBOX_TOKEN,
+        mapboxgl: maplibregl,
         marker: false,
         placeholder: 'Busque por cidade, bairro, estado ou CEP',
         language: 'pt-BR',
@@ -1453,7 +1484,7 @@
         const camera = map.cameraForBounds(BRAZIL_BOUNDS, { padding: 48 });
         const target = (camera && camera.zoom >= 3)
             ? { center: camera.center, zoom: camera.zoom }
-            : { center: camera ? camera.center : [-51.9, -14.2], zoom: 3.01 };
+            : { center: camera ? camera.center : [-51.9, -14.2], zoom: 3 };
         if (animate) map.easeTo(Object.assign({ duration: 600 }, target));
         else map.jumpTo(target);
     }
@@ -1461,7 +1492,7 @@
     // ------- TOOLTIP --------
     // Numbers follow the cursor on the map; the legend card is filter + scale only.
 
-    const popup = new mapboxgl.Popup({
+    const popup = new maplibregl.Popup({
         closeButton: false,
         closeOnClick: false,
         anchor: 'top',
@@ -1689,10 +1720,8 @@
     function addCustomMapContent() {
         map.addSource('points', {
             type: 'vector',
-            tiles: [
-                'http://localhost:8080/data/censo2022/{z}/{x}/{y}.pbf',
-            ],
-            // First real tileset is z=3; without this the map would request missing z=2 PBFs.
+            url: 'pmtiles://' + pmtilesUrl('censo2022'),
+            // First real tileset is z=3; keep the floor even if metadata is late.
             minzoom: 3,
             maxzoom: 14,
         });
@@ -1717,7 +1746,7 @@
         ].forEach(function (item) {
             map.addSource(item[0], {
                 type: 'vector',
-                tiles: ['http://localhost:8080/data/' + item[1] + '/{z}/{x}/{y}.pbf'],
+                url: 'pmtiles://' + pmtilesUrl(item[1]),
                 minzoom: 3,
                 maxzoom: 14
             });
@@ -1741,11 +1770,10 @@
 
         map.addSource('setores', {
             type: 'vector',
-            // National census_tract.geojson is ~248MB and freezes Mapbox at
-            // high zoom (Salvador / SP). Hover reads vector tiles instead.
-            tiles: [
-                'http://localhost:8080/data/hover/{z}/{x}/{y}.pbf',
-            ],
+            // National census_tract.geojson is ~248MB and freezes the map at
+            // high zoom (Salvador / SP). Hover reads the same PMTiles archive
+            // as municípios; source zooms keep setor tiles off the overview.
+            url: 'pmtiles://' + pmtilesUrl('hover'),
             minzoom: 10,
             maxzoom: 12,
         });
@@ -1786,9 +1814,7 @@
         
         map.addSource('municipios', {
             type: 'vector',
-            tiles: [
-                'http://localhost:8080/data/hover/{z}/{x}/{y}.pbf',
-            ],
+            url: 'pmtiles://' + pmtilesUrl('hover'),
             minzoom: 3,
             maxzoom: 9,
         });
@@ -1828,7 +1854,11 @@
         });
     }
 
-    map.on('load', function () {
+    // Cached styles can fire `load` during `new maplibregl.Map()`; register
+    // immediately and run now if the map is already ready.
+    function onMapReady() {
+        if (onMapReady.done) return;
+        onMapReady.done = true;
         hideBasemapLabels();
         addCustomMapContent();
         applyRadiusMultiplier(radiusMultiplier);
@@ -1837,7 +1867,9 @@
         jumpToBrazilOverview(false);
         updateDotScale();
         refreshDevPanel();
-    });
+    }
+    map.on('load', onMapReady);
+    if (map.loaded()) onMapReady();
 
     let censusTractID = null;
     // Vector hover tiles need sourceLayer; GeoJSON generateId was enough before.
@@ -2189,7 +2221,7 @@
         // switcher copy): the mobile sheet title and now the desktop h1 too.
         // The <title> tag stays the plain product name — tab labels should
         // not churn on every view switch.
-        const lensTitle = 'Onde o Brasil mora por ' + VIEW_CONFIGS[view].label;
+        const lensTitle = PRODUCT_NAME + ' por ' + VIEW_CONFIGS[view].label;
         const introTitle = document.getElementById('intro-title');
         if (introTitle) introTitle.textContent = lensTitle;
         const sheetTitle = document.getElementById('sheet-title');

@@ -121,7 +121,7 @@ def merge_hover() -> None:
     Census-tract polygons stay full-resolution in the per-UF files (dots
     need the shape). The merged hover GeoJSON is simplified only as an
     intermediate: loading it in Mapbox (248MB at 27 UFs) freezes the map
-    at high zoom, so the browser reads `data/tiles/hover.mbtiles` instead.
+    at high zoom, so the browser reads `data/tiles/hover.pmtiles` instead.
     """
     RACE_DIR.mkdir(parents=True, exist_ok=True)
     for kind in ("municipality", "census_tract"):
@@ -144,16 +144,18 @@ def merge_hover() -> None:
 
 
 def build_hover_tiles() -> None:
-    """Municípios at z3–9 and setores at z10–14, one MBTiles for tileserver.
+    """Municípios at z3–9 and setores at z10–14, one PMTiles archive.
 
     --generate-ids is required so setFeatureState can highlight the hover
     outline. Different zoom ranges keep setor tiles off the national view.
+    Intermediate tippecanoe outputs stay MBTiles; only the joined file
+    is PMTiles (what the browser range-requests).
     """
     mun = RACE_DIR / "municipality.geojson"
     setor = RACE_DIR / "census_tract.geojson"
     out_dir = ROOT / "data" / "tiles"
     out_dir.mkdir(parents=True, exist_ok=True)
-    hover = out_dir / "hover.mbtiles"
+    hover = out_dir / "hover.pmtiles"
     tmp_mun = out_dir / "hover_municipios.mbtiles"
     tmp_setor = out_dir / "hover_setores.mbtiles"
     if not mun.exists() and not setor.exists():
@@ -208,15 +210,14 @@ def build_hover_tiles() -> None:
             check=True,
         )
     parts = [p for p in (tmp_mun, tmp_setor) if p.exists()]
-    if len(parts) == 1:
-        parts[0].replace(hover)
-    elif len(parts) == 2:
+    if parts:
+        # Always join into PMTiles so a single-layer run is not left as MBTiles.
         subprocess.run(
-            ["tile-join", "-f", "-o", str(hover), str(tmp_mun), str(tmp_setor)],
+            ["tile-join", "-f", "-o", str(hover), *[str(p) for p in parts]],
             check=True,
         )
-        tmp_mun.unlink(missing_ok=True)
-        tmp_setor.unlink(missing_ok=True)
+        for part in parts:
+            part.unlink(missing_ok=True)
     print(f"wrote {hover}")
 
 
