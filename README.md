@@ -2,7 +2,7 @@
 
 Mapa de densidade de pontos do Censo 2022 / IBGE. A UI mostra **Raça** e **Renda** (27 UFs). Óbitos está no pipeline/tiles mas oculto no seletor até a view ficar pronta. Frontend MapLibre GL JS; tiles em PMTiles servidos da mesma origem (HTTP Range).
 
-Ao vivo: [https://carabetta.xyz/dotsbr/](https://carabetta.xyz/dotsbr/). `main` e `master` são produção ([docs/deploy.md](docs/deploy.md)).
+Ao vivo: [https://carabetta.xyz/dotsbr/](https://carabetta.xyz/dotsbr/). Código: [github.com/JoaoCarabetta/dotsbr](https://github.com/JoaoCarabetta/dotsbr). `main` e `master` são produção ([docs/deploy.md](docs/deploy.md)).
 
 Guia completo: [docs/local-setup.md](docs/local-setup.md).
 

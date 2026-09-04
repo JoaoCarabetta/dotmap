@@ -1,6 +1,6 @@
 # Deploy
 
-The public map is [https://carabetta.xyz/dotsbr/](https://carabetta.xyz/dotsbr/). `master` and `main` are production: a push of `index.html` deploys that file to the VPS. The old slug `/dataviz/brazildots/` 301s to `/dotsbr/`.
+The public map is [https://carabetta.xyz/dotsbr/](https://carabetta.xyz/dotsbr/). The GitHub repo is [JoaoCarabetta/dotsbr](https://github.com/JoaoCarabetta/dotsbr) (the old `dotmap` name redirects). `master` and `main` are production: a push of `index.html` deploys that file to the VPS. The old slug `/dataviz/brazildots/` 301s to `/dotsbr/`.
 
 Nginx and the rest of carabetta.xyz live in the sibling `carabetta.xyz` repo. That repo deploys on push to `main` (its `master` branch is an older diverged line and is not wired to prod).
 

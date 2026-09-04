@@ -4,7 +4,7 @@ Instruções para agentes que trabalham neste repositório. Leia isto antes de e
 
 ## O que é este projeto
 
-**dotmap** (**dotsbr**) é um mapa de densidade de pontos do Censo Demográfico 2022 (IBGE). Raça, renda do responsável e idade ao falecer cobrem as 27 UFs. A unidade do ponto muda por view e zoom.
+**dotsbr** (repo `JoaoCarabetta/dotsbr`; checkout local ainda pode se chamar `dotmap`) é um mapa de densidade de pontos do Censo Demográfico 2022 (IBGE). Raça, renda do responsável e idade ao falecer cobrem as 27 UFs. A unidade do ponto muda por view e zoom.
 
 Produto associado ao Escritório de Dados.
 
