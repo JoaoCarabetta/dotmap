@@ -2,30 +2,28 @@
 <html lang="pt-BR">
 <head>
     <meta charset="utf-8">
-    <!-- WhatsApp's crawler stops after a few KB and never runs JS, so every
-         share tag has to be static HTML and sit *before* the inline CSS / map
-         scripts (~120 KB). Absolute image URLs: it will not resolve relative
-         paths against /dotsbr/. ?v= busts a cached "title-only" scrape. -->
     <title>dotsbr</title>
-    <meta name="description" content="O Brasil em pontos: cada ponto é um grupo de pessoas do Censo de 2022. Aproxime e veja o seu bairro.">
-    <meta property="og:type" content="website">
-    <meta property="og:locale" content="pt_BR">
-    <meta property="og:site_name" content="dotsbr">
-    <meta property="og:url" content="https://carabetta.xyz/dotsbr/">
+    <!-- WhatsApp forbids query strings on og:url and reads only the first
+         kilobytes, so these four tags stay first and undecorated. Nginx
+         also serves og.html to the WhatsApp UA. card.jpg is a stripped JPEG. -->
     <meta property="og:title" content="dotsbr">
-    <meta property="og:description" content="O Brasil em pontos: cada ponto é um grupo de pessoas do Censo de 2022. Aproxime e veja o seu bairro.">
-    <meta property="og:image" content="https://carabetta.xyz/dotsbr/og.jpg?v=2">
-    <meta property="og:image:secure_url" content="https://carabetta.xyz/dotsbr/og.jpg?v=2">
+    <meta property="og:description" content="O Brasil em pontos. Cada ponto é um grupo de pessoas do Censo de 2022.">
+    <meta property="og:url" content="https://carabetta.xyz/dotsbr/">
+    <meta property="og:image" content="https://carabetta.xyz/dotsbr/card.jpg">
     <meta property="og:image:type" content="image/jpeg">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="Mapa do Brasil em pontos coloridos, feito com dados do Censo de 2022">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="pt_BR">
+    <meta property="og:site_name" content="dotsbr">
+    <meta name="description" content="O Brasil em pontos: cada ponto é um grupo de pessoas do Censo de 2022. Aproxime e veja o seu bairro.">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="dotsbr">
     <meta name="twitter:description" content="O Brasil em pontos: cada ponto é um grupo de pessoas do Censo de 2022. Aproxime e veja o seu bairro.">
-    <meta name="twitter:image" content="https://carabetta.xyz/dotsbr/og.jpg?v=2">
+    <meta name="twitter:image" content="https://carabetta.xyz/dotsbr/card.jpg">
     <link rel="canonical" href="https://carabetta.xyz/dotsbr/">
-    <link rel="image_src" href="https://carabetta.xyz/dotsbr/og.jpg?v=2">
+    <link rel="image_src" href="https://carabetta.xyz/dotsbr/card.jpg">
     <!-- Relative so localhost and /dotsbr/ both resolve; crawlers use og:image. -->
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="icon" href="favicon.ico" sizes="32x32">

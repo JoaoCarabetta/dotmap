@@ -8,7 +8,7 @@ Nginx and the rest of carabetta.xyz live in the sibling `carabetta.xyz` repo. Th
 
 | Job | Repo | Uploads |
 |---|---|---|
-| `.github/workflows/deploy.yml` | this repo | `index.html` + `og.jpg` (WhatsApp/iMessage Open Graph card) + `favicon.svg` / `favicon.ico` / `apple-touch-icon.png` |
+| `.github/workflows/deploy.yml` | this repo | `index.html` + `og.html` (WhatsApp crawler page) + `card.jpg` / `og.jpg` + favicons |
 | `.github/workflows/deploy.yml` | `carabetta.xyz` | site HTML + nginx; **not** PMTiles |
 
 The four archives (`censo2022.pmtiles`, `censo2022_income.pmtiles`, `censo2022_deaths.pmtiles`, `hover.pmtiles`) stay on the VPS at `/var/www/carabetta.xyz/dotsbr/data/tiles/`. They are gitignored (~700MB). Upload them from a machine that already has `data/tiles/`:

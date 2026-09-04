@@ -190,7 +190,7 @@ White rounded card, top-left, story-first — the mobile sheet's reading order a
 
 Search is **not** inside the panel: the geocoder floats as a white pill **immediately to the right of the panel, top-aligned** (`#desk-search`, anchored to the stack with `left: calc(100% + 12px)` so it tracks the card width). Suggestions drop over the map, never clipped by the card.
 
-The page `<title>` stays the plain **dotsbr** (tab labels should not churn on view switch); only the h1 carries the lens suffix. Share previews (WhatsApp, iMessage, Telegram, Slack) use the same name plus a static description and `og.jpg` — see [Link previews](#link-previews-whatsapp--imessage) below. The explainer (`p.intro-explainer`) is:
+The page `<title>` stays the plain **dotsbr** (tab labels should not churn on view switch); only the h1 carries the lens suffix. Share previews (WhatsApp, iMessage, Telegram, Slack) use the same name plus a static description and `card.jpg` — see [Link previews](#link-previews-whatsapp--imessage) below. The explainer (`p.intro-explainer`) is:
 
 **Cada ponto é um grupo de pessoas. A cor mostra a raça que elas declararam no Censo de 2022. Quanto mais você aproxima o mapa, menos pessoas cada ponto representa.**
 
@@ -200,19 +200,23 @@ Body copy never says “(IBGE)” or “Censo Demográfico 2022” — those sta
 
 ## Link previews (WhatsApp / iMessage)
 
-Crawlers do not run the map JS, so the share card is **static tags at the top of `<head>`** (WhatsApp stops reading after a few KB, before the inline CSS) plus `og.jpg` next to `index.html`. A compact WhatsApp card with only **dotsbr** and the domain means the crawler took the `<title>` and dropped the image — usually a stale scrape from before `og.jpg` existed, not missing tags.
+Crawlers do not run the map JS. WhatsApp also **rejects query strings on `og:url`** (so never share `?v=2`) and may time out on the 120KB map HTML. The share card is therefore:
+
+1. **Static tags at the very top of `index.html` `<head>`** (title, description, url, image — no query strings).
+2. **`og.html`** — a &lt;1KB document with the same tags. Nginx serves it to `WhatsApp/*`, `facebookexternalhit`, and other share bots hitting `/dotsbr/`; browsers still get the map.
+3. **`card.jpg`** — 1200×630 stripped JPEG (no EXIF/ICC) at `https://carabetta.xyz/dotsbr/card.jpg`.
 
 | Tag | Value |
 |---|---|
 | `og:title` / `<title>` | **dotsbr** |
-| `og:description` / `description` | **O Brasil em pontos: cada ponto é um grupo de pessoas do Censo de 2022. Aproxime e veja o seu bairro.** (share hook, not the in-map explainer: race and income both color the dots, so the card must not lock to one view) |
-| `og:image:alt` | **Mapa do Brasil em pontos coloridos, feito com dados do Censo de 2022** |
-| `og:image` / `og:image:secure_url` | `https://carabetta.xyz/dotsbr/og.jpg?v=2` (absolute; 1200×630 JPEG of the national race map, chrome hidden; `?v=` busts a cached title-only scrape) |
+| `og:description` | **O Brasil em pontos. Cada ponto é um grupo de pessoas do Censo de 2022.** (≤80 characters; WhatsApp's documented length. The longer hook stays on `meta name="description"` / Twitter.) |
+| `og:url` | `https://carabetta.xyz/dotsbr/` (undecorated — no `?v=`) |
+| `og:image` | `https://carabetta.xyz/dotsbr/card.jpg` |
 | `twitter:card` | `summary_large_image` (Slack / X also read this) |
 
 The tab icon is a five-dot cluster in the census colors (`favicon.svg`, `favicon.ico`, `apple-touch-icon.png` 180×180), linked relatively so localhost resolves. WhatsApp's large card uses `og:image`, not the favicon.
 
-`og.jpg` is a crop of the live map at the Brazil frame (no panel, no search, no footer). Replace it the same way: hide chrome, screenshot, crop to 1200×630, then bump the `?v=` on `og:image` so scrapers fetch the new file. WhatsApp caches the card hard — after a deploy, scrape again at [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/) or paste `https://carabetta.xyz/dotsbr/?v=2` in a **new** chat; an old thread keeps the stale preview. The in-app **Compartilhar** button is a different path: it builds a JPEG of the *current* camera.
+`card.jpg` is a crop of the live map at the Brazil frame (no panel, no search, no footer), re-encoded as a baseline JFIF. Replace it the same way: hide chrome, screenshot, crop to 1200×630, strip metadata. Share **`https://carabetta.xyz/dotsbr/`** in a **new** WhatsApp chat — an old thread and any `?v=` URL keep a stale or generic preview. The in-app **Compartilhar** button is a different path: it builds a JPEG of the *current* camera.
 
 ## Share button
 

@@ -35,7 +35,7 @@ A página fica em `http://localhost:8000` (`python3 scripts/serve.py --port 8001
 
 Sem restaurar arquivos extras: pontos funcionam; hover (`data/tiles/hover.pmtiles`) dá 404 até `python3 scripts/ibge_uf.py tiles`. Detalhes em `docs/local-setup.md`.
 
-Público: https://carabetta.xyz/dotsbr/ (repo `carabetta.xyz`; o slug antigo `/dataviz/brazildots/` redireciona). Push em `main` ou `master` neste repo publica o `index.html`, o `og.jpg` e os favicons (`.github/workflows/deploy.yml`). O HTML pede `data/tiles/*.pmtiles` relativo à página; no VPS servir os arquivos como estáticos com `Accept-Ranges: bytes` e `gzip off` — o container tileserver-gl-light deixa de ser necessário. Detalhes em [`docs/deploy.md`](docs/deploy.md).
+Público: https://carabetta.xyz/dotsbr/ (repo `carabetta.xyz`; o slug antigo `/dataviz/brazildots/` redireciona). Push em `main` ou `master` neste repo publica o `index.html`, o `og.html`, o `card.jpg` e os favicons (`.github/workflows/deploy.yml`). Nginx no `carabetta.xyz` entrega `og.html` ao user-agent do WhatsApp. O HTML pede `data/tiles/*.pmtiles` relativo à página; no VPS servir os arquivos como estáticos com `Accept-Ranges: bytes` e `gzip off` — o container tileserver-gl-light deixa de ser necessário. Detalhes em [`docs/deploy.md`](docs/deploy.md).
 
 Não rode `./makefiles.sh` só para visualizar: exige UF (`./makefiles.sh RR`), precisa de GeoJSON que não está no git, e um run completo regenera 7–14 daquela UF (caro). Tiles de outras UFs não são apagados. Para só 3–6: `python3 scripts/build_density_clusters.py RR` e `./makefiles.sh RR 3,4,5,6`. Loop nacional: `SKIP_TILE_JOIN=1` por UF e um `tile-join` no fim.
 
@@ -58,15 +58,17 @@ Servidor: `python3 scripts/serve.py` (Range em `.pmtiles`). Alternativa: `uv run
 - `scripts/ibge_uf.py` — códigos IBGE, download, merge do hover concatenado e `tiles` (PMTiles de hover).
 - `scripts/build_municipality_rj.py` — wrapper que chama `build_municipality.py RJ`.
 - `notebooks/treat_2022.ipynb` — cruza microdados do censo com geometria de setores.
-- `docs/docs.md` — zoom, densidade, schema demográfico, filtro na legenda, basemap **light-v10 com labels de cidade/bairro, sem satellite**, chrome (painel único top-left, busca à direita, bottom sheet no mobile, rodapé slim; sem rail/FAB/zoom no mobile), preview de link (Open Graph + `og.jpg`), botão Compartilhar (card 4:5 + pill do município + Web Share), ordem da legenda de raça parda → branca → preta → indígena → amarela, paleta de renda invertida (pobre vermelho → rico azul), Óbitos oculto na UI, painel dev localhost-only.
-- `og.jpg` — card 1200×630 do mapa nacional (raça, sem chrome) para WhatsApp / iMessage.
+- `docs/docs.md` — zoom, densidade, schema demográfico, filtro na legenda, basemap **light-v10 com labels de cidade/bairro, sem satellite**, chrome (painel único top-left, busca à direita, bottom sheet no mobile, rodapé slim; sem rail/FAB/zoom no mobile), preview de link (Open Graph + `card.jpg` / `og.html`), botão Compartilhar (card 4:5 + pill do município + Web Share), ordem da legenda de raça parda → branca → preta → indígena → amarela, paleta de renda invertida (pobre vermelho → rico azul), Óbitos oculto na UI, painel dev localhost-only.
+- `og.jpg` — crop legado 1200×630; o card do WhatsApp passou a ser `card.jpg`.
+- `card.jpg` — JPEG 1200×630 sem EXIF/ICC para Open Graph / WhatsApp.
+- `og.html` — documento mínimo de Open Graph; o nginx entrega isso ao crawler do WhatsApp.
 - `favicon.svg` / `favicon.ico` / `apple-touch-icon.png` — ícone da aba (cinco pontos nas cores do censo).
 - `docs/fontes.md` — URLs e caveats dos arquivos brutos do IBGE (raça nacional já baixada).
 - `docs/local-setup.md` — como juntar os tiles versionados e servir o mapa.
 - `docs/deploy.md` — CI (`main`/`master` → prod) e o path público `/dotsbr/`.
 - `docs/structure.md` — árvore do repositório.
-- `.github/workflows/deploy.yml` — push de `index.html` / `og.jpg` / favicons em `main`/`master` → VPS `/dotsbr/`.
-- `deploy.sh` — equivalente local (`index.html` + `og.jpg` + favicons); `./deploy.sh --tiles` sobe os PMTiles.
+- `.github/workflows/deploy.yml` — push de `index.html` / `og.html` / `card.jpg` / favicons em `main`/`master` → VPS `/dotsbr/`.
+- `deploy.sh` — equivalente local (`index.html` + `og.html` + `card.jpg` + favicons); `./deploy.sh --tiles` sobe os PMTiles.
 - `debugger.html` — visualizador OpenLayers legado (XYZ na :8080); não é o caminho do mapa.
 - `tiles/` — MBTiles versionados por UF (`tiles/{UF}/zoomN-N/tiles.mbtiles`). Cobertura atual: todas as 27 UFs (AC–TO, inclusive MG e SP).
 - `data/` — gitignored. GeoJSON e PMTiles nacionais mesclados não entram no git.

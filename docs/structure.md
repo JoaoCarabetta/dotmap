@@ -5,10 +5,12 @@ dotmap/
 ├── AGENTS.md                 # Instructions for coding agents
 ├── README.md                 # How to build tiles and serve the map locally
 ├── .github/workflows/deploy.yml  # main/master → https://carabetta.xyz/dotsbr/
-├── deploy.sh                 # rsync index.html + og.jpg + favicons (optional --tiles)
+├── deploy.sh                 # rsync index.html + og.html + card.jpg + favicons (optional --tiles)
 ├── deploy.env.example        # local SSH target; copy to gitignored deploy.env
 ├── index.html                # Map UI, Open Graph tags, share card, MapLibre + PMTiles logic
-├── og.jpg                    # 1200×630 Open Graph / WhatsApp share image
+├── og.html                   # Tiny Open Graph document served to WhatsApp/Facebook crawlers
+├── og.jpg                    # Legacy 1200×630 share crop
+├── card.jpg                  # 1200×630 stripped JPEG for WhatsApp / iMessage
 ├── favicon.svg               # Tab icon (five census-color dots on light gray)
 ├── favicon.ico               # 32×32 PNG-in-ICO fallback for older clients
 ├── apple-touch-icon.png      # 180×180 iOS home-screen icon
