@@ -1496,6 +1496,26 @@
     // top bar when the phone breakpoint matches (and back on resize).
     document.getElementById('desk-search').appendChild(geocoder.onAdd(map));
 
+    function blurGeocoder() {
+        const input = document.querySelector('.mapboxgl-ctrl-geocoder--input');
+        if (!input) return;
+        input.blur();
+        // iOS often restores focus after the suggestion tap; a second blur
+        // after the gesture ends is what actually drops the keyboard.
+        setTimeout(function () { input.blur(); }, 50);
+    }
+
+    (function markGeocoderInput() {
+        const input = document.querySelector('.mapboxgl-ctrl-geocoder--input');
+        if (input) input.setAttribute('enterkeyhint', 'search');
+    }());
+
+    // On the phone, picking a result (or clearing) must drop the software
+    // keyboard so the map is visible again — iOS keeps it up while focused.
+    geocoder.on('result', blurGeocoder);
+    geocoder.on('clear', blurGeocoder);
+    map.on('dragstart', blurGeocoder);
+
     // How dots were generated (makefiles.sh), not which polygon hover is active (that flips at 10).
     function tileGeometrySource(zoom) {
         const z = parseInt(Number(zoom).toFixed(0), 10);
@@ -1833,13 +1853,27 @@
 
     // ------- LOADERS ----------
 
-    function hideBasemapLabels() {
+    // Streets, POIs, water and admin names still fight the dots. City and
+    // bairro labels are the exception: they orient without filling the map.
+    const PLACE_LABEL_LAYERS = {
+        'settlement-label': true,
+        'settlement-subdivision-label': true
+    };
+
+    function applyBasemapLabels() {
         const style = map.getStyle();
         if (!style || !style.layers) return;
         style.layers.forEach(function (layer) {
-            // Names fight the dots; leave fill/line/background so the country still has shape.
-            if (layer.type === 'symbol') {
-                map.setLayoutProperty(layer.id, 'visibility', 'none');
+            if (layer.type !== 'symbol') return;
+            const show = PLACE_LABEL_LAYERS[layer.id];
+            map.setLayoutProperty(layer.id, 'visibility', show ? 'visible' : 'none');
+            if (show) {
+                // light-v10 prefers name_en; Brazil should read in Portuguese.
+                map.setLayoutProperty(layer.id, 'text-field', [
+                    'coalesce',
+                    ['get', 'name_pt'],
+                    ['get', 'name']
+                ]);
             }
         });
     }
@@ -1986,7 +2020,7 @@
     function onMapReady() {
         if (onMapReady.done) return;
         onMapReady.done = true;
-        hideBasemapLabels();
+        applyBasemapLabels();
         addCustomMapContent();
         applyRadiusMultiplier(radiusMultiplier);
         setView(currentView, false);
