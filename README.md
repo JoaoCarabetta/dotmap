@@ -1,6 +1,6 @@
 # dotmap
 
-Mapa de densidade de pontos do Censo 2022 / IBGE. A UI mostra **Raça** e **Renda** (27 UFs). Óbitos está no pipeline/tiles mas oculto no seletor até a view ficar pronta. Frontend Mapbox GL JS; tiles vetoriais servidos localmente pelo tileserver-gl.
+Mapa de densidade de pontos do Censo 2022 / IBGE. O nome do produto na UI é **dotsbr**. A UI mostra **Raça** e **Renda** (27 UFs). Óbitos está no pipeline/tiles mas oculto no seletor até a view ficar pronta. Frontend Mapbox GL JS; tiles vetoriais servidos localmente pelo tileserver-gl.
 
 Ao vivo: [https://carabetta.xyz/dataviz/brazildots/](https://carabetta.xyz/dataviz/brazildots/).
 
